@@ -1,40 +1,27 @@
-/* auth.css — The Original Classic Style */
+/* auth.css — Original Split Screen Style */
 
-/* 1. Global Setup */
-:root {
-    --bg-color: #111827;       /* خلفية غامقة */
-    --card-bg: #1f2937;        /* خلفية الكروت */
-    --text-main: #f3f4f6;      /* لون النصوص */
-    --text-muted: #9ca3af;     /* لون النصوص الفرعي */
-    --border-color: #374151;   /* لون الحدود */
-    --accent-color: #3b82f6;   /* الأزرق الأساسي */
-    --accent-hover: #2563eb;   /* الأزرق عند الوقوف عليه */
-}
-
+/* 1. Global Reset */
 body {
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-main);
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    background-color: var(--bg-color);
+    font-family: 'Segoe UI', sans-serif;
 }
 
-/* 2. Main Container (تقسيم الشاشة نصفين) */
+/* 2. Container (تقسيم الشاشة) */
 .auth-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
     width: 100%;
     height: 100vh;
     overflow: hidden;
-    background-color: var(--bg-color);
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
 
-/* 3. Left Side (Brand & Images) - الجزء الأزرق */
+/* 3. Left Side (القسم الأزرق) */
 .auth-brand {
     background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
     position: relative;
@@ -45,39 +32,15 @@ body {
     text-align: center;
     color: white;
     padding: 40px;
-    overflow: hidden;
 }
 
-/* دوائر خلفية متحركة */
-.auth-brand::before, .auth-brand::after {
-    content: "";
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-}
-.auth-brand::before { top: -20%; right: -20%; width: 400px; height: 400px; animation: float 6s infinite ease-in-out; }
-.auth-brand::after { bottom: -10%; left: -10%; width: 300px; height: 300px; animation: float 8s infinite ease-in-out reverse; }
+.brand-content h1 { font-size: 3rem; margin-bottom: 10px; font-weight: bold; }
+.brand-content p { font-size: 1.2rem; opacity: 0.9; margin-bottom: 30px; }
 
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(20px); }
-}
-
-.brand-content {
-    position: relative;
-    z-index: 10;
-    width: 100%;
-    max-width: 500px;
-}
-
-.brand-content h1 { font-size: 3rem; margin-bottom: 10px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-.brand-content p { font-size: 1.2rem; opacity: 0.95; margin-bottom: 40px; }
-
-/* --- Image Grid (تنسيق الصور) --- */
+/* الصور (في المنتصف) */
 .image-grid {
     display: flex;
     justify-content: center;
-    align-items: center;
     gap: 20px;
     margin-top: 20px;
 }
@@ -87,15 +50,10 @@ body {
     height: 200px;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     border: 3px solid rgba(255,255,255,0.2);
-    transition: transform 0.3s ease;
-    cursor: pointer;
     position: relative;
-    background-color: #ddd;
 }
-
-.img-card:hover { transform: translateY(-5px) scale(1.05); border-color: white; }
 
 .img-card img {
     width: 100%;
@@ -103,91 +61,42 @@ body {
     object-fit: cover;
 }
 
-/* Overlay Text (ID) */
-.overlay {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-    padding: 10px;
-    transform: translateY(100%);
-    transition: transform 0.3s;
-}
-.img-card:hover .overlay { transform: translateY(0); }
-.overlay-text { font-size: 0.8rem; color: white; font-weight: bold; }
-
-
-/* 4. Right Side (Forms) - الجزء اليمين */
+/* 4. Right Side (الفورم) */
 .auth-forms {
+    background-color: var(--card-bg);
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 40px;
-    background-color: var(--card-bg);
-    position: relative;
 }
 
-.form-section {
-    width: 100%;
-    max-width: 400px;
-    display: none; /* إخفاء الكل افتراضياً */
-    animation: fadeIn 0.4s ease;
-}
+.form-section { width: 100%; max-width: 400px; display: none; }
+.form-section.active { display: block; }
 
-.form-section.active { display: block; } /* إظهار القسم النشط */
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-.form-header h2 { font-size: 2rem; margin-bottom: 10px; color: white; margin-top: 0; }
+.form-header h2 { color: white; margin-bottom: 10px; font-size: 2rem; }
 .form-header p { color: var(--text-muted); margin-bottom: 30px; }
 
-/* Inputs */
+/* الحقول */
 .form-group { margin-bottom: 20px; }
-.form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.9rem; }
+.form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); }
 
-.input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input-wrapper i {
-    position: absolute;
-    left: 15px;
-    color: var(--text-muted);
-    font-size: 1.2rem;
-}
-
+.input-wrapper { position: relative; }
 .input-wrapper input {
     width: 100%;
-    padding: 14px 14px 14px 45px; /* مسافة للأيقونة */
-    background-color: var(--bg-color);
+    padding: 12px 12px 12px 40px;
+    background: var(--bg-color);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     color: white;
     font-size: 1rem;
-    outline: none;
-    transition: border-color 0.2s;
     box-sizing: border-box;
 }
+.input-wrapper i { position: absolute; left: 12px; top: 14px; color: var(--text-muted); }
 
-.input-wrapper input:focus { border-color: var(--accent-color); }
-
-/* Form Options (Remember me & Forgot password) */
-.form-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    font-size: 0.9rem;
-    color: var(--text-muted);
-}
-.checkbox { display: flex; align-items: center; gap: 5px; cursor: pointer; }
-.forgot-link { color: var(--accent-color); text-decoration: none; }
-.forgot-link:hover { text-decoration: underline; }
-
-/* Buttons */
+/* الأزرار */
 .btn {
     width: 100%;
-    padding: 14px;
+    padding: 12px;
     background-color: var(--accent-color);
     color: white;
     border: none;
@@ -195,61 +104,16 @@ body {
     font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
-    transition: background 0.2s;
-    margin-top: 5px;
+    margin-top: 10px;
 }
 .btn:hover { background-color: var(--accent-hover); }
 
-/* Social Buttons */
-.social-buttons { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
-.btn-social {
-    width: 45px; height: 45px;
-    border-radius: 50%;
-    border: 1px solid var(--border-color);
-    background: transparent;
-    color: white;
-    font-size: 1.2rem;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: 0.3s;
-}
-.btn-social:hover { background-color: rgba(255,255,255,0.1); border-color: var(--accent-color); }
-
-/* Divider */
-.form-divider {
-    display: flex; align-items: center; gap: 10px; margin: 20px 0; color: var(--text-muted); font-size: 0.9rem;
-}
-.form-divider::before, .form-divider::after {
-    content: ""; flex: 1; height: 1px; background: var(--border-color);
-}
-
-/* Footer Links */
 .form-footer { margin-top: 20px; text-align: center; color: var(--text-muted); }
-.toggle-form-link { color: var(--accent-color); text-decoration: none; font-weight: bold; cursor: pointer; }
-.toggle-form-link:hover { text-decoration: underline; }
+.toggle-form-link { color: var(--accent-color); cursor: pointer; text-decoration: none; }
 
-/* Theme Switcher (Fixed) */
-.theme-switcher { position: fixed; top: 20px; right: 20px; z-index: 100; }
-.theme-switcher select {
-    padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border-color);
-    background: var(--card-bg); color: white; cursor: pointer;
-}
-
-/* --- Mobile Fix (بسيط جداً عشان ميضربش الشكل) --- */
+/* إصلاح للموبايل (بدون تعقيد) */
 @media (max-width: 900px) {
-    .auth-container {
-        grid-template-columns: 1fr; /* يتحول لعمود واحد */
-        height: auto;
-        overflow-y: auto; /* يسمح بالسكرول */
-    }
-
-    .auth-brand {
-        padding: 40px 20px;
-        min-height: 40vh;
-    }
-
-    .auth-forms {
-        padding: 40px 20px;
-        min-height: 60vh;
-    }
+    .auth-container { grid-template-columns: 1fr; overflow-y: auto; }
+    .auth-brand { min-height: 40vh; padding: 30px; }
+    .auth-forms { min-height: 60vh; padding: 30px; }
 }
