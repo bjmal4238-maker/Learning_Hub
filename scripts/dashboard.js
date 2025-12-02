@@ -1,6 +1,6 @@
 /* scripts/dashboard.js
    - Fetches courses from Firebase
-   - Handles Themes (Dark/Light)
+   - Handles Themes (Dark/Beige ONLY) - Light removed
    - Restores Watch & Preview Buttons
 */
 
@@ -18,11 +18,22 @@ function initDashboard() {
 
     const { db, collection, getDocs, auth, signOut } = window.firebaseAuth;
 
-    // 2. تشغيل الثيمات (Theme Switcher) - [تصليح المشكلة الأولى]
+    // 2. تشغيل الثيمات (Theme Switcher) - [تعديل: إزالة الأبيض]
     const themeSelect = document.getElementById('themeSelect');
     if (themeSelect) {
+        // حذف خيار "Light" من القائمة برمجياً
+        const lightOption = themeSelect.querySelector('option[value="light"]');
+        if (lightOption) lightOption.remove();
+
         // استرجاع الثيم المحفوظ
-        const savedTheme = localStorage.getItem('theme') || 'dark';
+        let savedTheme = localStorage.getItem('theme') || 'dark';
+
+        // لو كان الثيم القديم "light"، نخليه "dark" اجبارياً
+        if (savedTheme === 'light') {
+            savedTheme = 'dark';
+            localStorage.setItem('theme', 'dark');
+        }
+
         document.body.setAttribute('data-theme', savedTheme);
         themeSelect.value = savedTheme;
 
@@ -96,7 +107,7 @@ function renderSection(allCourses, category, elementId) {
         const card = document.createElement('div');
         card.className = 'course-card';
         
-        // [تصليح المشكلة الثانية]: إعادة رسم الأزرار
+        // رسم الكارت مع الأزرار
         card.innerHTML = `
             <div class="course-thumbnail">
                 <img src="${item.thumbnail}" alt="${item.title}" loading="lazy">
@@ -111,7 +122,7 @@ function renderSection(allCourses, category, elementId) {
                     <div class="course-level"><i class='bx bx-bar-chart'></i> ${item.level}</div>
                 </div>
                 
-                <!-- أزرار المشاهدة والمعاينة (رجعت هنا) -->
+                <!-- أزرار المشاهدة والمعاينة -->
                 <div class="video-actions" style="margin-top:15px; display:flex; gap:10px;">
                     <button class="btn small accent-btn outline watch-btn" style="flex:1;">
                         <i class="bx bxs-show"></i> Watch
