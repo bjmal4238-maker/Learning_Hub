@@ -1,155 +1,67 @@
-/* scripts/auth.js
-   Firebase Authentication Logic
-   Handles Login & Register with proper redirects
-*/
+/* auth.css — Login Page Styles */
 
-// التأكد من تحميل الصفحة
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // ننتظر ثانية للتأكد من تحميل ملف الكونفيج
-    setTimeout(() => initAuth(), 500);
+/* Layout */
+body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+.auth-container { display:grid; grid-template-columns:1fr 1fr; width:100%; height:100vh; box-shadow:var(--shadow-xl); overflow:hidden; }
 
-    // تفعيل التبديل بين الفورم (Login / Register)
-    setupFormToggles();
-});
-
-function initAuth() {
-    // التأكد من أن مكتبة الفايربيز موجودة
-    if (!window.firebaseAuth) {
-        console.error("Firebase not loaded yet.");
-        return;
-    }
-
-    const { 
-        auth, 
-        signInWithEmailAndPassword, 
-        createUserWithEmailAndPassword, 
-        ADMIN_EMAIL 
-    } = window.firebaseAuth;
-
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-
-    // -----------------------------------------
-    // 1. منطق تسجيل الدخول (Login)
-    // -----------------------------------------
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('loginUsername').value.trim(); // المستخدم قد يكتب ايميل هنا
-            const pass = document.getElementById('loginPassword').value;
-            const btn = loginForm.querySelector('button');
-
-            if (!email || !pass) {
-                alert("الرجاء إدخال الإيميل وكلمة المرور");
-                return;
-            }
-
-            // تغيير الزر لـ "جار التحميل"
-            const originalBtnText = btn.textContent;
-            btn.textContent = "Checking...";
-            btn.disabled = true;
-
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-                const user = userCredential.user;
-
-                // التوجيه حسب نوع المستخدم
-                if (user.email === ADMIN_EMAIL) {
-                    window.location.href = './pages/admin.html';
-                } else {
-                    window.location.href = './pages/dashboard.html';
-                }
-
-            } catch (error) {
-                console.error(error);
-                let msg = "خطأ في تسجيل الدخول.";
-                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
-                    msg = "الإيميل أو كلمة المرور غير صحيحة.";
-                } else if (error.code === 'auth/wrong-password') {
-                    msg = "كلمة المرور غير صحيحة.";
-                }
-                alert(msg);
-                btn.textContent = originalBtnText;
-                btn.disabled = false;
-            }
-        });
-    }
-
-    // -----------------------------------------
-    // 2. منطق إنشاء حساب جديد (Register)
-    // -----------------------------------------
-    if (registerForm) {
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const email = document.getElementById('regEmail').value.trim();
-            const pass = document.getElementById('regPassword').value;
-            // const name = document.getElementById('regUsername').value; // يمكن حفظ الاسم لاحقاً في البروفايل
-            const btn = registerForm.querySelector('button');
-
-            if (!email || !pass) {
-                alert("الرجاء ملء جميع البيانات");
-                return;
-            }
-
-            if (pass.length < 6) {
-                alert("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
-                return;
-            }
-
-            btn.textContent = "Creating...";
-            btn.disabled = true;
-
-            try {
-                // إنشاء الحساب في فايربيز
-                await createUserWithEmailAndPassword(auth, email, pass);
-                
-                alert("تم إنشاء الحساب بنجاح! 🎉");
-                
-                // === هنا التعديل اللي طلبته ===
-                // التوجيه للداش بورد مباشرة بدل البروفايل
-                window.location.href = './pages/dashboard.html'; 
-
-            } catch (error) {
-                console.error(error);
-                let msg = "حدث خطأ أثناء الإنشاء.";
-                if (error.code === 'auth/email-already-in-use') {
-                    msg = "هذا الإيميل مستخدم بالفعل.";
-                } else if (error.code === 'auth/weak-password') {
-                    msg = "كلمة المرور ضعيفة جداً.";
-                }
-                alert(msg);
-                btn.textContent = "Create Account";
-                btn.disabled = false;
-            }
-        });
-    }
+/* Left Side (Brand) */
+.auth-brand {
+  background: linear-gradient(135deg,#7494ec 0%,#5f7fd4 100%);
+  color: #fff; display:flex; align-items:center; justify-content:center; padding:var(--space-8); position:relative; overflow:hidden;
 }
 
-// دالة بسيطة للتبديل بين تسجيل الدخول وإنشاء الحساب
-function setupFormToggles() {
-    const toggles = document.querySelectorAll('.toggle-form-link');
-    toggles.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const targetForm = link.getAttribute('data-form'); // 'login' or 'register'
-            
-            document.querySelectorAll('.form-section').forEach(sec => {
-                sec.classList.remove('active');
-                sec.style.position = 'absolute';
-                sec.style.opacity = '0';
-                sec.style.visibility = 'hidden';
-            });
+/* Floating Circles Background */
+.auth-brand::before, .auth-brand::after {
+  content:""; position:absolute; border-radius:50%; background:rgba(255,255,255,.1);
+}
+.auth-brand::before { top:-50%; right:-50%; width:500px; height:500px; animation:float 6s ease-in-out infinite; }
+.auth-brand::after { bottom:-30%; left:-30%; width:300px; height:300px; animation:float 8s ease-in-out infinite reverse; }
+@keyframes float { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(30px); } }
 
-            const activeSec = document.querySelector(`.${targetForm}-section`);
-            if (activeSec) {
-                activeSec.classList.add('active');
-                activeSec.style.position = 'relative';
-                activeSec.style.opacity = '1';
-                activeSec.style.visibility = 'visible';
-            }
-        });
-    });
+.brand-content { position:relative; z-index:1; text-align:center; max-width:350px; width:100%; }
+.brand-content h1 { font-size:48px; font-weight:700; margin-bottom:var(--space-3); text-shadow:0 4px 12px rgba(0,0,0,.1); }
+.brand-content p { font-size:18px; color:rgba(255,255,255,.9); margin-bottom:var(--space-8); }
+
+/* Right Side (Forms) */
+.auth-forms { display:flex; align-items:center; justify-content:center; background:var(--card); padding:var(--space-8); overflow-y:auto; position: relative; }
+.form-section { width:100%; max-width:380px; opacity:0; visibility:hidden; position:absolute; transition:opacity var(--transition-base),visibility var(--transition-base); }
+.form-section.active { opacity:1; visibility:visible; position:relative; }
+
+/* Inputs */
+.input-wrapper { position:relative; display:flex; align-items:center; margin-bottom: 15px; }
+.input-wrapper i { position:absolute; left:var(--space-4); color:var(--text-muted); font-size:18px; pointer-events:none; }
+.input-wrapper input { 
+    width:100%; padding: 12px 12px 12px 45px; 
+    background: var(--bg-color); border: 1px solid var(--border); 
+    color: var(--text); border-radius: var(--radius-md);
+}
+.input-wrapper input:focus { border-color: var(--accent); outline: none; }
+label { display: block; margin-bottom: 8px; font-size: 14px; }
+
+/* Image Grid (Centered & Responsive) */
+.brand-features .image-grid {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.brand-features .img-card {
+  width: 45% !important; max-width: 160px;
+  border-radius: 10px; overflow: hidden; position: relative;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.brand-features .img-card img {
+  display: block; width: 100%; height: 160px; object-fit: cover;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 992px) {
+    .auth-container { display: flex; flex-direction: column; min-height: 100vh; height: auto; overflow-y: auto; }
+    .auth-brand { order: 1; padding: 40px 20px; min-height: auto; }
+    .auth-forms { order: 2; width: 100%; padding: 40px 20px; min-height: 400px; }
+    .form-section { position: relative; opacity: 1; visibility: visible; }
+    .brand-content h1 { font-size: 32px; }
+    .brand-features .img-card { max-width: 120px; }
+    .brand-features .img-card img { height: 120px; }
 }
