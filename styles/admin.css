@@ -140,4 +140,81 @@ input:focus, textarea:focus {
   .admin-container { padding:12px; margin:18px; }
   .contact-btn { width:100%; display:block; }
   .contact-btn + .contact-btn { margin-top:8px; margin-left:0 !important; }
+}/* --- Admin Responsive Fixes (Mobile) --- */
+
+/* 1. تظبيط الحاوية الأساسية في الموبايل */
+@media (max-width: 768px) {
+    .admin-container {
+        width: 95% !important; /* تخلي البوكس ياخد عرض الشاشة كلها تقريباً */
+        padding: 15px !important;
+        margin: 20px auto;
+    }
+
+    /* 2. تظبيط الكروت (الخلفيات الرمادي) */
+    .card {
+        padding: 15px !important;
+    }
+
+    /* 3. أهم جزء: تخلي الليبل والحقل تحت بعض */
+    label {
+        display: flex !important;
+        flex-direction: column; /* يخلي الكلام فوق والحقل تحته */
+        gap: 8px; /* مسافة بينهم */
+        margin-bottom: 15px;
+        width: 100%;
+        font-weight: bold;
+    }
+
+    /* 4. إجبار الحقول إنها تاخد العرض كامل */
+    .small-input, 
+    input[type="text"], 
+    textarea, 
+    select {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box; /* عشان الـ Padding ميبوظش العرض */
+        height: auto;
+        padding: 12px; /* تكبير المساحة للكتابة */
+        font-size: 16px; /* خط واضح للموبايل */
+    }
+
+    /* 5. تظبيط الأزرار (حفظ ومسح) */
+    .contact-btn {
+        width: 100% !important; /* الزرار ياخد العرض كله */
+        display: block;
+        margin: 10px 0 !important; /* مسافات بين الأزرار */
+        padding: 12px;
+    }
+    
+    /* الحاوية اللي ماسكة الأزرار */
+    .card > div[style*="margin-top"] {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* زر المسح ياخد مسافة كويسة */
+    #clearCourseForm {
+        margin-left: 0 !important; /* الغاء المارجن القديم */
+    }
+
+    /* 6. تحسين شكل القائمة (الفيديوهات اللي تحت) */
+    .course-row {
+        flex-direction: column; /* يخلي الصورة والعنوان والزرار فوق بعض */
+        align-items: flex-start !important;
+        gap: 15px;
+    }
+    
+    .course-row > div {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .course-row button {
+        width: 100%; /* زر الحذف يبقى عريض */
+        margin-top: 5px;
+    }
 }
+
