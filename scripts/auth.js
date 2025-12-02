@@ -1,229 +1,155 @@
-/* 
- * scripts/auth.js
- * Firebase Authentication with Email/Password
- * Replaces localStorage authentication
- */
+/* scripts/auth.js
+   Firebase Authentication Logic
+   Handles Login & Register with proper redirects
+*/
 
-(async function() {
+// التأكد من تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // ننتظر ثانية للتأكد من تحميل ملف الكونفيج
+    setTimeout(() => initAuth(), 500);
 
-    // Wait for Firebase to be ready
-    while (!window.firebaseAuth) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+    // تفعيل التبديل بين الفورم (Login / Register)
+    setupFormToggles();
+});
+
+function initAuth() {
+    // التأكد من أن مكتبة الفايربيز موجودة
+    if (!window.firebaseAuth) {
+        console.error("Firebase not loaded yet.");
+        return;
     }
 
-    const {
-        auth,
-        createUserWithEmailAndPassword,
-        signInWithEmailAndPassword
+    const { 
+        auth, 
+        signInWithEmailAndPassword, 
+        createUserWithEmailAndPassword, 
+        ADMIN_EMAIL 
     } = window.firebaseAuth;
 
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
-    const themeSelect = document.getElementById('themeSelect');
 
-    // --- image-grid behavior (populate overlays & hover blur) ---
-    function initImageGrid() {
-        const grid = document.querySelector('.brand-features .image-grid');
-        if (!grid) return;
-
-        const cards = Array.from(grid.querySelectorAll('.img-card'));
-
-        // populate overlay from data- attributes
-        cards.forEach(card => {
-            const name = card.dataset.name || '';
-            const id = card.dataset.id || '';
-            const titleEl = card.querySelector('.overlay .title');
-            const idEl = card.querySelector('.overlay .id');
-            if (titleEl) titleEl.textContent = name;
-            if (idEl) idEl.textContent = id;
-
-            // mouseenter/mouseleave
-            card.addEventListener('mouseenter', () => setActiveCard(card, cards));
-            card.addEventListener('mouseleave', () => clearActive(cards));
-
-            // focus/blur for keyboard
-            card.addEventListener('focus', () => setActiveCard(card, cards));
-            card.addEventListener('blur', () => clearActive(cards));
-
-            // click: for accessibility - toggle (optional)
-            card.addEventListener('click', (e) => {
-                e.preventDefault();
-                setActiveCard(card, cards);
-                setTimeout(() => clearActive(cards), 2000);
-            });
-        });
-
-        function setActiveCard(active, all) {
-            all.forEach(c => {
-                if (c === active) {
-                    c.classList.add('is-active');
-                    c.classList.remove('blurred');
-                } else {
-                    c.classList.add('blurred');
-                    c.classList.remove('is-active');
-                }
-            });
-        }
-
-        function clearActive(all) {
-            all.forEach(c => { c.classList.remove('is-active', 'blurred'); });
-        }
-    }
-
-    // Small UI helpers (modals)
-    function showSuccess(text) {
-        const el = document.getElementById('successMessage');
-        const modal = document.getElementById('successModal');
-        if (el && modal) {
-            el.textContent = text;
-            modal.classList.add('show');
-            setTimeout(() => modal.classList.remove('show'), 1800);
-        } else alert(text);
-    }
-
-    function showError(text) {
-        const el = document.getElementById('errorMessage');
-        const modal = document.getElementById('errorModal');
-        if (el && modal) {
-            el.textContent = text;
-            modal.classList.add('show');
-            setTimeout(() => modal.classList.remove('show'), 2500);
-        } else alert(text);
-    }
-
-    // Theme toggle
-    (function initTheme() {
-        const saved = localStorage.getItem('theme') || 'dark';
-        document.body.setAttribute('data-theme', saved);
-        if (themeSelect) themeSelect.value = saved;
-        themeSelect.addEventListener('change', (e) => {
-            const v = e.target.value;
-            localStorage.setItem('theme', v);
-            document.body.setAttribute('data-theme', v);
-        })
-    })();
-
-    // Toggle forms links
-    document.querySelectorAll('.toggle-form-link').forEach(a => {
-        a.addEventListener('click', (e) => {
+    // -----------------------------------------
+    // 1. منطق تسجيل الدخول (Login)
+    // -----------------------------------------
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const form = a.dataset.form;
-            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
-            document.querySelector(`.${form}-section`).classList.add('active');
-        });
-    });
+            
+            const email = document.getElementById('loginUsername').value.trim(); // المستخدم قد يكتب ايميل هنا
+            const pass = document.getElementById('loginPassword').value;
+            const btn = loginForm.querySelector('button');
 
-    // Register handler - Firebase Authentication
-    registerForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        const username = document.getElementById('regUsername').value.trim();
-        const email = document.getElementById('regEmail').value.trim();
-        const password = document.getElementById('regPassword').value;
-
-        if (!username || !email || !password) {
-            showError('من فضلك املأ كل الحقول');
-            return;
-        }
-        if (password.length < 6) {
-            showError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-            return;
-        }
-
-        try {
-            // Create user with Firebase Authentication
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-
-            // Store user display name and other info in localStorage temporarily
-            localStorage.setItem('userEmail', email);
-            localStorage.setItem('userName', username);
-            localStorage.setItem('userId', user.uid);
-            localStorage.setItem('theme', localStorage.getItem('theme') || 'dark');
-
-            showSuccess('تم إنشاء الحساب بنجاح! جارٍ التحويل...');
-            registerForm.reset();
-
-            setTimeout(() => {
-                // Redirect to profile page after registration
-                window.location.href = './pages/profile.html';
-            }, 1500);
-
-        } catch (error) {
-            console.error('Registration error:', error);
-            let errorMsg = 'حدث خطأ أثناء الإنشاء';
-
-            if (error.code === 'auth/email-already-in-use') {
-                errorMsg = 'هذا البريد الإلكتروني مسجل بالفعل';
-            } else if (error.code === 'auth/invalid-email') {
-                errorMsg = 'البريد الإلكتروني غير صحيح';
-            } else if (error.code === 'auth/weak-password') {
-                errorMsg = 'كلمة المرور ضعيفة جداً';
-            } else if (error.message) {
-                errorMsg = error.message;
+            if (!email || !pass) {
+                alert("الرجاء إدخال الإيميل وكلمة المرور");
+                return;
             }
 
-            showError(errorMsg);
-        }
-    });
+            // تغيير الزر لـ "جار التحميل"
+            const originalBtnText = btn.textContent;
+            btn.textContent = "Checking...";
+            btn.disabled = true;
 
-    // Login handler - Firebase Authentication
-    loginForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+                const user = userCredential.user;
 
-        const email = document.getElementById('loginUsername').value.trim();
-        const password = document.getElementById('loginPassword').value;
+                // التوجيه حسب نوع المستخدم
+                if (user.email === ADMIN_EMAIL) {
+                    window.location.href = './pages/admin.html';
+                } else {
+                    window.location.href = './pages/dashboard.html';
+                }
 
-        if (!email || !password) {
-            showError('أدخل البريد الإلكتروني وكلمة المرور');
-            return;
-        }
+            } catch (error) {
+                console.error(error);
+                let msg = "خطأ في تسجيل الدخول.";
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
+                    msg = "الإيميل أو كلمة المرور غير صحيحة.";
+                } else if (error.code === 'auth/wrong-password') {
+                    msg = "كلمة المرور غير صحيحة.";
+                }
+                alert(msg);
+                btn.textContent = originalBtnText;
+                btn.disabled = false;
+            }
+        });
+    }
 
-        try {
-            // Sign in with Firebase Authentication
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+    // -----------------------------------------
+    // 2. منطق إنشاء حساب جديد (Register)
+    // -----------------------------------------
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-            // Store user info in localStorage
-            localStorage.setItem('userEmail', email);
-            localStorage.setItem('userId', user.uid);
-            localStorage.setItem('theme', localStorage.getItem('theme') || 'dark');
+            const email = document.getElementById('regEmail').value.trim();
+            const pass = document.getElementById('regPassword').value;
+            // const name = document.getElementById('regUsername').value; // يمكن حفظ الاسم لاحقاً في البروفايل
+            const btn = registerForm.querySelector('button');
 
-            showSuccess('مرحباً! جارٍ التحويل إلى لوحة التحكم...');
-            loginForm.reset();
-
-            setTimeout(() => {
-                window.location.href = './pages/dashboard.html';
-            }, 1000);
-
-        } catch (error) {
-            console.error('Login error:', error);
-            let errorMsg = 'خطأ في البريد الإلكتروني أو كلمة المرور';
-
-            if (error.code === 'auth/user-not-found') {
-                errorMsg = 'المستخدم غير موجود';
-            } else if (error.code === 'auth/wrong-password') {
-                errorMsg = 'كلمة المرور خاطئة';
-            } else if (error.code === 'auth/invalid-email') {
-                errorMsg = 'البريد الإلكتروني غير صحيح';
-            } else if (error.message) {
-                errorMsg = error.message;
+            if (!email || !pass) {
+                alert("الرجاء ملء جميع البيانات");
+                return;
             }
 
-            showError(errorMsg);
-        }
-    });
+            if (pass.length < 6) {
+                alert("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+                return;
+            }
 
-    // Close modals on click
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.remove('show');
+            btn.textContent = "Creating...";
+            btn.disabled = true;
+
+            try {
+                // إنشاء الحساب في فايربيز
+                await createUserWithEmailAndPassword(auth, email, pass);
+                
+                alert("تم إنشاء الحساب بنجاح! 🎉");
+                
+                // === هنا التعديل اللي طلبته ===
+                // التوجيه للداش بورد مباشرة بدل البروفايل
+                window.location.href = './pages/dashboard.html'; 
+
+            } catch (error) {
+                console.error(error);
+                let msg = "حدث خطأ أثناء الإنشاء.";
+                if (error.code === 'auth/email-already-in-use') {
+                    msg = "هذا الإيميل مستخدم بالفعل.";
+                } else if (error.code === 'auth/weak-password') {
+                    msg = "كلمة المرور ضعيفة جداً.";
+                }
+                alert(msg);
+                btn.textContent = "Create Account";
+                btn.disabled = false;
+            }
+        });
+    }
+}
+
+// دالة بسيطة للتبديل بين تسجيل الدخول وإنشاء الحساب
+function setupFormToggles() {
+    const toggles = document.querySelectorAll('.toggle-form-link');
+    toggles.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetForm = link.getAttribute('data-form'); // 'login' or 'register'
+            
+            document.querySelectorAll('.form-section').forEach(sec => {
+                sec.classList.remove('active');
+                sec.style.position = 'absolute';
+                sec.style.opacity = '0';
+                sec.style.visibility = 'hidden';
+            });
+
+            const activeSec = document.querySelector(`.${targetForm}-section`);
+            if (activeSec) {
+                activeSec.classList.add('active');
+                activeSec.style.position = 'relative';
+                activeSec.style.opacity = '1';
+                activeSec.style.visibility = 'visible';
+            }
         });
     });
-
-    // Initialize after DOM ready
-    document.addEventListener('DOMContentLoaded', () => {
-        initImageGrid();
-    });
-
-})();
+}
