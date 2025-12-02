@@ -1,208 +1,146 @@
-/* admin.css — Full Admin Page Styles (Responsive) */
+/* admin.css — Classic Dark Theme (Restored) */
 
 :root {
-  /* ألوان الثيم (Dark Mode) */
-  --bg-color: #111827;       /* خلفية الصفحة */
-  --card-bg: #1f2937;        /* خلفية الكروت */
-  --text-main: #f3f4f6;      /* لون النصوص الأساسي */
-  --text-muted: #9ca3af;     /* لون النصوص الفرعي */
-  --border-color: #374151;   /* لون الحدود */
-  --accent-color: #3b82f6;   /* اللون الأزرق الأساسي */
-  --accent-hover: #2563eb;   /* الأزرق عند الوقوف عليه */
-  --danger-color: #ef4444;   /* الأحمر للحذف والخروج */
-  --success-color: #10b981;  /* الأخضر للنجاح */
+  --bg-dark: #111827;
+  --card-dark: #1f2937;
+  --text-light: #f3f4f6;
+  --text-gray: #9ca3af;
+  --border-color: #374151;
+  --blue-primary: #3b82f6;
+  --red-danger: #ef4444;
 }
 
-/* إعدادات الصفحة العامة */
 body {
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  direction: rtl; /* عربي */
   margin: 0;
   padding: 20px;
-  direction: rtl; /* اتجاه الصفحة يمين ليسار */
-  line-height: 1.6;
 }
 
-/* الحاوية اللي ماسكة المحتوى كله */
+/* الحاوية الرئيسية */
 .admin-container {
-  max-width: 800px; /* أقصى عرض للكمبيوتر */
-  margin: 0 auto;   /* توسيط في الشاشة */
-  padding: 0 10px;
+  max-width: 850px;
+  margin: 0 auto;
 }
 
 /* العناوين */
-h1 { font-size: 2rem; margin-bottom: 0.5rem; margin-top: 0; color: white; }
-h2 { font-size: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-top: 0; }
-p#admin-welcome { color: var(--text-muted); margin-bottom: 25px; font-size: 1.1rem; }
-
-/* الفواصل */
+h1 { margin-top: 0; margin-bottom: 10px; font-size: 28px; }
+#admin-welcome { color: var(--text-gray); margin-bottom: 30px; }
 hr { border: 0; border-top: 1px solid var(--border-color); margin: 30px 0; }
 
-/* الكروت (المربعات الرمادي) */
+/* الكروت (Boxes) */
 .card {
-  background-color: var(--card-bg);
+  background-color: var(--card-dark);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 25px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  margin-bottom: 25px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
 }
 
-/* -------------------
-   تنسيق الفورم (الإدخال)
-   ------------------- */
+.card h2 {
+  margin-top: 0;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+
+/* الحقول (Inputs) */
 label {
   display: block;
   margin-bottom: 8px;
+  color: #d1d5db;
   font-weight: 600;
-  color: var(--text-muted);
   margin-top: 15px;
 }
 
-/* كل أنواع حقول الإدخال */
-.small-input, 
-input[type="text"], 
-textarea, 
-select {
-  width: 100%; /* ياخد العرض بالكامل */
-  background-color: #111827; /* لون أغمق من الكارت */
+.small-input, select, textarea {
+  width: 100%;
+  background-color: #111827; /* أغمق سنة من الخلفية */
   border: 1px solid var(--border-color);
-  color: white;
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 15px;
-  box-sizing: border-box; /* عشان البادينج مايبوظش العرض */
-  transition: border-color 0.2s ease;
+  border-radius: 6px;
+  color: #fff;
+  padding: 10px 12px;
+  font-size: 14px;
+  box-sizing: border-box; /* يضمن إن العرض ميزدش عن 100% */
   font-family: inherit;
 }
 
 .small-input:focus {
-  border-color: var(--accent-color);
+  border-color: var(--blue-primary);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-/* -------------------
-   تنسيق الأزرار
-   ------------------- */
+/* الأزرار (Buttons) */
 .contact-btn {
-  background-color: var(--accent-color);
+  background-color: var(--blue-primary);
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
+  padding: 10px 20px;
+  border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 15px;
-  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: bold;
   display: inline-block;
 }
 
-.contact-btn:hover {
-  background-color: var(--accent-hover);
-  transform: translateY(-1px);
-}
-
-.contact-btn:active { transform: translateY(0); }
-.contact-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.contact-btn:hover { opacity: 0.9; }
 
 /* أزرار خاصة */
 #clearCourseForm {
-  background-color: #4b5563 !important; /* رمادي */
+  background-color: #4b5563; /* رمادي */
   margin-right: 10px;
 }
-#clearCourseForm:hover { background-color: #374151 !important; }
 
 #logoutAdmin {
-  background-color: var(--danger-color) !important; /* أحمر */
+  background-color: var(--red-danger);
   width: 100%;
-  padding: 15px;
-  margin-top: 20px;
+  padding: 12px;
   font-size: 16px;
+  margin-top: 10px;
 }
-#logoutAdmin:hover { background-color: #dc2626 !important; }
 
-/* -------------------
-   قائمة الفيديوهات (List)
-   ------------------- */
+/* قائمة الفيديوهات */
 #coursesList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .course-row {
   display: flex;
-  justify-content: space-between; /* يوزع المحتوى يمين وشمال */
+  justify-content: space-between;
   align-items: center;
-  background: rgba(0,0,0,0.2);
-  padding: 15px;
-  border-radius: 8px;
+  background-color: rgba(255,255,255,0.03);
+  padding: 10px 15px;
+  border-radius: 6px;
   border: 1px solid var(--border-color);
-  transition: background 0.2s;
 }
 
-.course-row:hover { background: rgba(0,0,0,0.4); }
+.course-row img {
+  border-radius: 4px;
+}
 
 .course-row button {
-  background-color: var(--danger-color);
+  background-color: var(--red-danger);
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: bold;
+  font-size: 12px;
 }
-.course-row button:hover { background-color: #dc2626; }
 
-/* -------------------
-   📱 التجاوب مع الموبايل (Mobile Responsive)
-   ------------------- */
-@media (max-width: 768px) {
-    /* الحاوية تاخد الشاشة كلها */
-    .admin-container { width: 100%; padding: 10px; margin: 0; }
-    
-    /* تقليل حواف الكارت */
-    .card { padding: 15px; }
-
-    h1 { font-size: 1.7rem; text-align: center; }
-    h2 { font-size: 1.3rem; }
-    
-    /* تظبيط الأزرار تحت بعض */
-    .card > div[style*="margin-top"] {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .contact-btn {
-        width: 100%; /* الزرار بعرض الشاشة */
-        margin: 0 !important;
-        padding: 14px; /* منطقة لمس أكبر */
-        text-align: center;
-    }
-
-    #clearCourseForm { margin-right: 0; }
-
-    /* شكل القائمة في الموبايل */
-    .course-row {
-        flex-direction: column; /* العناصر فوق بعض */
-        align-items: flex-start;
-        gap: 15px;
-    }
-    
-    .course-row > div {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-    
-    .course-row button {
-        width: 100%; /* زر الحذف كبير */
-        padding: 12px;
-        margin-top: 5px;
-    }
+/* تعديل بسيط جداً للموبايل (عشان الصفحة متخرجش بره الشاشة)
+   من غير ما يبوظ شكل الكمبيوتر 
+*/
+@media (max-width: 600px) {
+  .admin-container { padding: 10px; }
+  .card { padding: 15px; }
+  /* يخلي الأزرار تحت بعض في الموبايل بس */
+  .contact-btn { width: 100%; margin: 5px 0; text-align: center; }
+  #clearCourseForm { margin-right: 0; }
 }
