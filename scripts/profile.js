@@ -1,281 +1,175 @@
 /* scripts/profile.js
-   Firebase-based profile editor
-   - Uses Firebase Auth for user info
-   - Stores profile data in Firestore (profiles collection)
+   Handles Profile UI, Image Upload, and Firebase Sync
 */
 
-(async function() {
+document.addEventListener('DOMContentLoaded', () => {
+    // انتظار تحميل مكتبة الفايربيز
+    setTimeout(() => initProfile(), 500);
+});
 
-    // Wait for Firebase to be ready
-    while (!window.firebaseAuth) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+function initProfile() {
+    // 1. التأكد من الفايربيز
+    if (!window.firebaseAuth) {
+        console.error("Firebase not loaded!");
+        return;
     }
 
-    const {
-        auth,
-        db,
-        collection,
-        addDoc,
-        getDocs,
-        updateDoc,
-        doc,
-        query,
-        orderBy,
-        onAuthStateChanged,
-        signOut
-    } = window.firebaseAuth;
-
+    const { auth, db, doc, getDoc, setDoc, onAuthStateChanged, signOut } = window.firebaseAuth;
     const PLACEHOLDER = 'https://via.placeholder.com/160';
-    const KEY_AVATAR = 'lh_profile_avatar';
-    const KEY_NAME = 'lh_profile_name';
-    const KEY_BIO = 'lh_profile_bio';
 
-    let currentUser = null;
-    let userProfile = null;
+    // 2. إعدادات الثيم (أسود / بيج فقط)
+    const themeSelect = document.getElementById('themeSelect');
+    if (themeSelect) {
+        // إزالة الأبيض إن وجد
+        const lightOpt = themeSelect.querySelector('option[value="light"]');
+        if(lightOpt) lightOpt.remove();
 
-    // Check authentication
-    onAuthStateChanged(auth, (user) => {
+        let savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'light') savedTheme = 'dark'; // تصحيح الخطأ القديم
+
+        document.body.setAttribute('data-theme', savedTheme);
+        themeSelect.value = savedTheme;
+
+        themeSelect.addEventListener('change', (e) => {
+            const v = e.target.value;
+            localStorage.setItem('theme', v);
+            document.body.setAttribute('data-theme', v);
+        });
+    }
+
+    // 3. مراقبة المستخدم الحالي
+    onAuthStateChanged(auth, async (user) => {
         if (!user) {
-            window.location.href = '../index.html';
+            window.location.href = '../index.html'; // لو مش مسجل، اطرده
             return;
         }
-        currentUser = user;
-        const userEmail = user.email;
-        localStorage.setItem('userEmail', userEmail);
-        localStorage.setItem('userId', user.uid);
-        loadProfile();
+
+        // عرض الايميل فوراً
+        document.getElementById('emailLabel').textContent = user.email;
+        
+        // محاولة جلب بيانات البروفايل من الفايربيز
+        await loadUserProfile(user, db);
     });
 
-    // DOM helpers
-    const $ = id => document.getElementById(id);
-    const profileForm = $('profileForm');
-    const displayNameInput = $('displayName');
-    const avatarUrlInput = $('avatarUrl');
-    const bioInput = $('bio');
-    const profileAvatarLarge = $('profileAvatarLarge');
-    const profileAvatarLargeSmall = $('profileAvatarLargeSmall');
-    const displayNameHeading = $('displayNameHeading');
-    const usernameLabel = $('usernameLabel');
-    const clearProfileBtn = $('clearProfile');
-    const profileBtn = $('profileBtn');
-    const logoutBtn = $('logoutBtn');
-    const userAvatarHeader = $('userAvatar');
-    const avatarFileInput = $('avatarFile');
-    const avatarPreviewWrap = $('avatarPreviewWrap');
-    const themeSelect = $('themeSelect');
+    // 4. أزرار الخروج والعودة
+    document.getElementById('logoutBtn')?.addEventListener('click', () => {
+        signOut(auth).then(() => window.location.href = '../index.html');
+    });
+    document.getElementById('profileBtn')?.addEventListener('click', () => {
+        window.location.href = 'dashboard.html';
+    });
 
-    // Safe image setter
-    function safeSet(el, url) {
-        if (!el) return;
-        el.onerror = null;
-        el.src = url || PLACEHOLDER;
-        el.onerror = () => { el.onerror = null;
-            el.src = PLACEHOLDER; };
-    }
+    // 5. منطق رفع الصورة والمعاينة
+    setupImageUpload();
 
-    // Fetch user profile from Firestore
-    async function fetchProfileFromFirestore() {
-        if (!currentUser) return null;
-        try {
-            const q = query(collection(db, `users/${currentUser.uid}/profiles`));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const doc = querySnapshot.docs[0];
-                return { docId: doc.id, ...doc.data() };
+    // 6. زر الحفظ
+    const form = document.getElementById('profileForm');
+    form?.addEventListener('submit', (e) => saveProfile(e, auth, db));
+}
+
+// دالة رفع ومعاينة الصورة
+function setupImageUpload() {
+    const fileInput = document.getElementById('avatarFile');
+    const urlInput = document.getElementById('avatarUrl');
+    const previewBox = document.getElementById('avatarPreviewWrap');
+    
+    // عند اختيار ملف
+    fileInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                updateAvatarUI(ev.target.result); // تحديث الصور فوراً
+                // تفريغ حقل الرابط لأنه اختار ملف
+                if(urlInput) urlInput.value = ''; 
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // عند الضغط على مربع الصورة -> فتح اختيار الملفات
+    previewBox?.addEventListener('click', () => fileInput.click());
+
+    // عند كتابة رابط صورة
+    urlInput?.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (val.length > 5) updateAvatarUI(val);
+    });
+}
+
+// تحديث كل صور الصفحة (الكبيرة والصغيرة وفي الهيدر)
+function updateAvatarUI(src) {
+    if (!src) return;
+    document.getElementById('profileAvatarLarge').src = src;
+    document.getElementById('profileAvatarLargeSmall').src = src;
+    document.getElementById('userAvatar').src = src;
+}
+
+// جلب البيانات من الداتابيز
+async function loadUserProfile(user, db) {
+    try {
+        const docRef = window.firebaseAuth.doc(db, "users", user.uid);
+        const docSnap = await window.firebaseAuth.getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            // ملء الحقول
+            document.getElementById('displayName').value = data.displayName || '';
+            document.getElementById('bio').value = data.bio || '';
+            document.getElementById('displayNameHeading').textContent = data.displayName || 'User';
+            
+            if (data.photoURL) {
+                updateAvatarUI(data.photoURL);
+                document.getElementById('avatarUrl').value = data.photoURL; // لو رابط
             }
-            return null;
-        } catch (error) {
-            console.error('Error fetching profile:', error);
-            return null;
         }
+    } catch (e) {
+        console.error("Error loading profile:", e);
     }
+}
 
-    // Read profile (localStorage + Firebase)
-    function readLocal() {
-        return {
-            name: localStorage.getItem(KEY_NAME) || (currentUser ? .displayName || 'User'),
-            avatar: localStorage.getItem(KEY_AVATAR) || PLACEHOLDER,
-            bio: localStorage.getItem(KEY_BIO) || ''
-        };
-    }
+// حفظ البيانات
+async function saveProfile(e, auth, db) {
+    e.preventDefault();
+    const user = auth.currentUser;
+    if (!user) return;
 
-    // Apply profile to UI
-    function applyUI(name, avatar, bio) {
-        const displayName = name || (currentUser ? .email || 'guest');
-        if (displayNameHeading) displayNameHeading.textContent = displayName;
-        if (usernameLabel) usernameLabel.textContent = `@${currentUser?.email?.split('@')[0] || 'user'}`;
-        safeSet(profileAvatarLarge, avatar);
-        safeSet(profileAvatarLargeSmall, avatar);
-        if (userAvatarHeader) safeSet(userAvatarHeader, avatar);
-    }
+    const btn = e.target.querySelector('button');
+    const originalText = btn.textContent;
+    btn.textContent = "Saving...";
+    btn.disabled = true;
 
-    // Load profile from localStorage initially
-    function loadProfile() {
-        const local = readLocal();
-        if (displayNameInput) displayNameInput.value = local.name;
-        if (avatarUrlInput) avatarUrlInput.value = local.avatar;
-        if (bioInput) bioInput.value = local.bio;
-        applyUI(local.name, local.avatar, local.bio);
-    }
+    // الصورة الحالية المعروضة
+    const currentPhoto = document.getElementById('profileAvatarLarge').src;
+    const name = document.getElementById('displayName').value;
+    const bio = document.getElementById('bio').value;
 
-    // Handle file upload
-    function handleFileUpload(file) {
-        if (!file) return;
-        if (!file.type || !file.type.startsWith('image/')) {
-            Swal.fire({ icon: 'error', title: 'Please upload an image file.' });
-            return;
-        }
-        const r = new FileReader();
-        r.onload = e => {
-            const url = e.target.result;
-            if (avatarUrlInput) avatarUrlInput.value = url;
-            applyUI((displayNameInput && displayNameInput.value) || 'User', url, (bioInput && bioInput.value) || '');
-        };
-        r.readAsDataURL(file);
-    }
+    const profileData = {
+        displayName: name,
+        bio: bio,
+        photoURL: currentPhoto, // ملاحظة: هنا بنحفظ الرابط أو الـ Base64
+        email: user.email
+    };
 
-    // Save profile to localStorage + Firestore
-    async function saveProfile(e) {
-        if (e && e.preventDefault) e.preventDefault();
-
-        const name = (displayNameInput && displayNameInput.value.trim()) || 'User';
-        const avatar = (avatarUrlInput && avatarUrlInput.value.trim()) || PLACEHOLDER;
-        const bio = (bioInput && bioInput.value.trim()) || '';
-
-        try {
-            // Save to localStorage
-            localStorage.setItem(KEY_NAME, name);
-            localStorage.setItem(KEY_AVATAR, avatar);
-            localStorage.setItem(KEY_BIO, bio);
-
-            // Save to Firestore (optional - for persistence across devices)
-            if (currentUser) {
-                try {
-                    const profileRef = collection(db, `users/${currentUser.uid}/profiles`);
-                    const existingProfiles = await getDocs(profileRef);
-
-                    const profileData = {
-                        displayName: name,
-                        avatar,
-                        bio,
-                        email: currentUser.email,
-                        updatedAt: new Date()
-                    };
-
-                    if (!existingProfiles.empty) {
-                        // Update existing profile
-                        const docId = existingProfiles.docs[0].id;
-                        await updateDoc(doc(db, `users/${currentUser.uid}/profiles`, docId), profileData);
-                    } else {
-                        // Create new profile
-                        await addDoc(profileRef, profileData);
-                    }
-                } catch (firestoreError) {
-                    console.warn('Firestore profile save failed (non-critical):', firestoreError);
-                }
-            }
-
-            applyUI(name, avatar, bio);
-            Swal.fire({
-                toast: true,
-                position: 'bottom-end',
-                icon: 'success',
-                title: 'Saved locally',
-                showConfirmButton: false,
-                timer: 1200
-            });
-            window.dispatchEvent(new CustomEvent('avatarChanged', { detail: { avatarUrl: avatar } }));
-        } catch (e) {
-            console.error('Save error:', e);
-            Swal.fire({ icon: 'error', title: 'Error saving profile' });
-        }
-    }
-
-    // Clear profile
-    function clearProfile() {
-        try {
-            localStorage.removeItem(KEY_NAME);
-            localStorage.removeItem(KEY_AVATAR);
-            localStorage.removeItem(KEY_BIO);
-        } catch (e) {}
-        loadProfile();
+    try {
+        // الحفظ في كوليكشن users برقم المستخدم
+        await window.firebaseAuth.setDoc(window.firebaseAuth.doc(db, "users", user.uid), profileData);
+        
+        document.getElementById('displayNameHeading').textContent = name || 'User';
+        
         Swal.fire({
-            toast: true,
-            position: 'bottom-end',
             icon: 'success',
-            title: 'Profile reset',
-            showConfirmButton: false,
-            timer: 1200
+            title: 'Saved!',
+            text: 'Profile updated successfully',
+            timer: 1500,
+            showConfirmButton: false
         });
+
+    } catch (error) {
+        console.error(error);
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to save profile' });
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
     }
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-        loadProfile();
-
-        if (avatarPreviewWrap && avatarFileInput) {
-            avatarPreviewWrap.addEventListener('click', () => avatarFileInput.click());
-        }
-        if (avatarFileInput) {
-            avatarFileInput.addEventListener('change', ev => {
-                const f = ev.target.files && ev.target.files[0];
-                if (f) handleFileUpload(f);
-            });
-        }
-        if (avatarUrlInput) {
-            avatarUrlInput.addEventListener('input', e => {
-                applyUI(
-                    (displayNameInput && displayNameInput.value) || 'User',
-                    e.target.value.trim() || PLACEHOLDER,
-                    (bioInput && bioInput.value) || ''
-                );
-            });
-        }
-        if (profileForm) profileForm.addEventListener('submit', saveProfile);
-        if (clearProfileBtn) clearProfileBtn.addEventListener('click', clearProfile);
-        if (profileBtn) profileBtn.addEventListener('click', () => {
-            window.location.href = './dashboard.html';
-        });
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async() => {
-                try {
-                    await signOut(auth);
-                    localStorage.removeItem('userEmail');
-                    localStorage.removeItem('userId');
-                    window.location.href = '../index.html';
-                } catch (error) {
-                    console.error('Logout error:', error);
-                }
-            });
-        }
-
-        if (themeSelect) {
-            const t = localStorage.getItem('theme') || 'dark';
-            document.body.setAttribute('data-theme', t);
-            themeSelect.value = t;
-            themeSelect.addEventListener('change', e => {
-                const v = e.target.value;
-                localStorage.setItem('theme', v);
-                document.body.setAttribute('data-theme', v);
-            });
-        }
-
-        window.addEventListener('storage', (e) => {
-            if ([KEY_AVATAR, KEY_NAME, KEY_BIO].includes(e.key)) {
-                const local = readLocal();
-                if (displayNameInput) displayNameInput.value = local.name;
-                if (avatarUrlInput) avatarUrlInput.value = local.avatar;
-                if (bioInput) bioInput.value = local.bio;
-                applyUI(local.name, local.avatar, local.bio);
-            }
-        });
-
-        window.addEventListener('avatarChanged', ev => {
-            const url = ev ? .detail ? .avatarUrl || localStorage.getItem(KEY_AVATAR) || PLACEHOLDER;
-            safeSet(profileAvatarLarge, url);
-            safeSet(profileAvatarLargeSmall, url);
-            if (userAvatarHeader) safeSet(userAvatarHeader, url);
-        });
-    });
-
-})();
+}
