@@ -3,14 +3,19 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>لوحة التحكم - Admin</title>
-    <link rel="stylesheet" href="../styles/admin.css">
+    
+    <!-- بص هنا: أنا ضفت ?v=2 في آخر السطر ده -->
+    <!-- ده اللي هيخلي الموبايل يحس بالتغيير غصب عنه -->
+    <link rel="stylesheet" href="../styles/admin.css?v=2">
+    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 
 <body data-theme="dark">
+
     <div class="admin-container">
         <h1>لوحة التحكم</h1>
         <p id="admin-welcome">مرحباً يا أدمن 👑 — يمكنك إدارة الموقع من هنا</p>
@@ -19,44 +24,43 @@
         <section class="card" aria-labelledby="addTitle">
             <h2 id="addTitle">إضافة / تعديل فيديو</h2>
 
-            <!-- مهم: الحقول كلها موجودة هنا -->
             <input type="hidden" id="courseId" />
 
             <label>عنوان الفيديو
-        <input id="courseTitle" class="small-input" type="text" placeholder="عنوان الفيديو">
-      </label>
+                <input id="courseTitle" class="small-input" type="text" placeholder="عنوان الفيديو">
+            </label>
 
             <label>الوصف / الكابشن
-        <textarea id="courseDesc" class="small-input" rows="3" placeholder="وصف قصير"></textarea>
-      </label>
+                <textarea id="courseDesc" class="small-input" rows="3" placeholder="وصف قصير"></textarea>
+            </label>
 
             <label>رابط فيديو يوتيوب أو Video ID
-        <input id="courseVid" class="small-input" type="text" placeholder="مثال: https://youtu.be/mU6anWqk3SU أو mU6anWqk3SU">
-      </label>
+                <input id="courseVid" class="small-input" type="text" placeholder="مثال: https://youtu.be/...">
+            </label>
 
             <label>المدة
-        <input id="courseDuration" class="small-input" type="text" placeholder="مثال: 12 hours">
-      </label>
+                <input id="courseDuration" class="small-input" type="text" placeholder="مثال: 12 hours">
+            </label>
 
             <label>المستوى
-        <input id="courseLevel" class="small-input" type="text" placeholder="Beginner / Intermediate / Advanced">
-      </label>
+                <input id="courseLevel" class="small-input" type="text" placeholder="Beginner / Intermediate / Advanced">
+            </label>
 
             <label>التصنيف
-        <select id="courseCategory" class="small-input">
-          <option value="featured">Featured</option>
-          <option value="cybersecurity">Cybersecurity</option>
-          <option value="programming">Programming</option>
-          <option value="ai">AI & ML</option>
-          <option value="networking">Networking</option>
-          <option value="webdev">Web Dev</option>
-          <option value="datascience">Data Science</option>
-        </select>
-      </label>
+                <select id="courseCategory" class="small-input">
+                  <option value="featured">Featured</option>
+                  <option value="cybersecurity">Cybersecurity</option>
+                  <option value="programming">Programming</option>
+                  <option value="ai">AI & ML</option>
+                  <option value="networking">Networking</option>
+                  <option value="webdev">Web Dev</option>
+                  <option value="datascience">Data Science</option>
+                </select>
+            </label>
 
             <div style="margin-top:10px;">
                 <button class="contact-btn" id="addCourseBtn">حفظ</button>
-                <button class="contact-btn" id="clearCourseForm" style="margin-left:8px;background:#6b7280">مسح الحقول</button>
+                <button class="contact-btn" id="clearCourseForm" style="background:#6b7280">مسح الحقول</button>
             </div>
 
             <p id="courseMsg"></p>
@@ -75,12 +79,11 @@
             <p>عدد المستخدمين المسجلين: <strong id="userCount">-</strong></p>
         </section>
 
-        <button class="contact-btn" id="logoutAdmin" style="margin-top:20px;">تسجيل خروج</button>
+        <button class="contact-btn" id="logoutAdmin" style="margin-top:20px; background-color: #ef4444;">تسجيل خروج</button>
     </div>
 
     <!-- سكربت الادمن (مفصول) -->
     <script type="module" src="../scripts/firebase-config.js"></script>
-    <script defer src="../scripts/admin.js"></script>
+    <script type="module" src="../scripts/admin.js"></script>
 </body>
-
 </html>
