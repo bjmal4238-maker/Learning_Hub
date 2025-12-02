@@ -1,172 +1,155 @@
-/* auth-clean.css — Auth page (cleaned & optimized) */
+/* scripts/auth.js
+   Firebase Authentication Logic
+   Handles Login & Register with proper redirects
+*/
 
-/* Page + container */
-body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
-.auth-container { display:grid; grid-template-columns:1fr 1fr; width:100%; height:100vh; box-shadow:var(--shadow-xl); overflow:hidden; }
+// التأكد من تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // ننتظر ثانية للتأكد من تحميل ملف الكونفيج
+    setTimeout(() => initAuth(), 500);
 
-/* Brand side */
-.auth-brand {
-  background: linear-gradient(135deg,#7494ec 0%,#5f7fd4 100%);
-  color: #fff; display:flex; align-items:center; justify-content:center; padding:var(--space-8); position:relative; overflow:hidden;
-}
-.auth-brand::before, .auth-brand::after {
-  content:""; position:absolute; border-radius:50%; background:rgba(255,255,255,.1);
-}
-.auth-brand::before { top:-50%; right:-50%; width:500px; height:500px; animation:float 6s ease-in-out infinite; }
-.auth-brand::after { bottom:-30%; left:-30%; width:300px; height:300px; animation:float 8s ease-in-out infinite reverse; }
-@keyframes float { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(30px); } }
+    // تفعيل التبديل بين الفورم (Login / Register)
+    setupFormToggles();
+});
 
-.brand-content { position:relative; z-index:1; text-align:center; max-width:350px; }
-.brand-content h1 { font-size:48px; font-weight:700; margin-bottom:var(--space-3); text-shadow:0 4px 12px rgba(0,0,0,.1); }
-.brand-content p { font-size:18px; color:rgba(255,255,255,.9); margin-bottom:var(--space-8); }
-.brand-features { display:flex; flex-direction:column; gap:var(--space-5); }
-
-/* Forms side */
-.auth-forms { display:flex; align-items:center; justify-content:center; background:var(--card); padding:var(--space-8); overflow-y:auto; }
-.form-section { width:100%; max-width:380px; opacity:0; visibility:hidden; position:absolute; transition:opacity var(--transition-base),visibility var(--transition-base); }
-.form-section.active { opacity:1; visibility:visible; position:relative; }
-
-/* Form header */
-.form-header { margin-bottom:var(--space-8); text-align:center; }
-.form-header h2 { margin-bottom:var(--space-2); color:var(--text); }
-.form-header p { color:var(--text-muted); margin:0; }
-
-/* Form groups */
-.form { display:flex; flex-direction:column; gap:var(--space-5); }
-.form-group { display:flex; flex-direction:column; }
-.form-group label { margin-bottom:var(--space-2); color:var(--text); }
-
-/* Input wrapper with icon */
-.input-wrapper { position:relative; display:flex; align-items:center; }
-.input-wrapper i { position:absolute; left:var(--space-4); color:var(--text-muted); font-size:18px; pointer-events:none; transition:color var(--transition-fast); }
-.input-wrapper input { padding-left:45px; width:100%; }
-.input-wrapper input:focus { border-color:var(--accent); }
-.input-wrapper input:focus~i { color:var(--accent); }
-
-/* Form options */
-.form-options { display:flex; justify-content:space-between; align-items:center; font-size:14px; }
-.checkbox { display:flex; align-items:center; gap:var(--space-2); cursor:pointer; user-select:none; color:var(--text-muted); }
-.checkbox input { width:18px; height:18px; cursor:pointer; }
-.forgot-link { color:var(--accent); text-decoration:none; font-weight:600; transition:opacity var(--transition-fast); }
-.forgot-link:hover { opacity:.8; }
-
-/* Divider */
-.form-divider { display:flex; align-items:center; gap:var(--space-3); margin:var(--space-2) 0; color:var(--text-muted); font-size:13px; }
-.form-divider::before, .form-divider::after { content:""; flex:1; height:1px; background:var(--border); }
-
-/* Social buttons */
-.social-buttons { display:flex; gap:var(--space-3); justify-content:center; }
-.btn-social {
-  width:48px; height:48px; border-radius:50%; border:2px solid var(--border);
-  background:transparent; color:var(--text); font-size:20px; cursor:pointer; transition:all var(--transition-fast);
-  display:flex; align-items:center; justify-content:center;
-}
-.btn-social:hover { border-color:var(--accent); color:var(--accent); background:var(--glass); }
-
-/* Footer */
-.form-footer { text-align:center; color:var(--text-muted); font-size:14px; }
-.toggle-form-link { color:var(--accent); font-weight:600; text-decoration:none; cursor:pointer; transition:opacity var(--transition-fast); }
-.toggle-form-link:hover { opacity:.8; }
-
-/* Theme switcher */
-.theme-switcher { position:fixed; top:var(--space-4); right:var(--space-4); z-index:1000; }
-.theme-switcher select { padding:var(--space-2) var(--space-3); border-radius:var(--radius-md); border:2px solid var(--border); background:var(--card); color:var(--text); font-size:13px; font-weight:600; cursor:pointer; transition:all var(--transition-fast); }
-.theme-switcher select:hover { border-color:var(--accent); }
-
-/* Modal icons */
-.modal-icon { width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto var(--space-4); font-size:32px; }
-.modal-icon.success { background:rgba(63,185,80,.1); color:var(--success); }
-.modal-icon.error { background:rgba(209,36,47,.1); color:var(--error); }
-.modal-box h3 { margin-bottom:var(--space-2); text-align:center; }
-.modal-box p { margin:0; text-align:center; color:var(--text-muted); }
-
-/* Responsive */
-@media (max-width:1024px){
-  .auth-container { grid-template-columns:1fr; }
-  .auth-brand { display:none; }
-  .auth-forms { height:100vh; }
-}
-@media (max-width:768px){
-  .auth-forms { padding:var(--space-5); }
-  .form-section { max-width:100%; }
-  .brand-content h1 { font-size:36px; }
-  .form-header h2 { font-size:24px; }
-}
-@media (max-width:480px){
-  .auth-forms { padding:var(--space-4); }
-  .form-header h2 { font-size:20px; }
-  .form-options { flex-direction:column; gap:var(--space-2); align-items:flex-start; }
-}
-
-/* =========================
-   IMAGE-GRID STYLES (Centered & Optimized for 2 items)
-   ========================= */
-
-.brand-features .image-grid {
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-top: 20px;
-}
-
-.brand-features .img-card {
-  width: 45% !important; /* كل صورة تأخذ نصف المساحة تقريباً */
-  max-width: 180px;      /* تحديد أقصى عرض لعدم تشويه الصورة */
-  border-radius: 10px;
-  overflow: hidden;
-  position: relative;
-  cursor: pointer;
-  transition: transform .22s ease, filter .22s ease, opacity .22s ease;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-  background: #ddd;
-  margin: 0 !important;
-}
-
-.brand-features .img-card img {
-  display: block;
-  width: 100%;
-  height: 180px; /* طول مناسب للصورة */
-  object-fit: cover;
-  transition: transform .28s ease;
-}
-
-/* التراكب النصي (Overlay) */
-.brand-features .overlay {
-  position: absolute; left: 0; right: 0; bottom: 0;
-  padding: 10px;
-  background: linear-gradient(0deg, rgba(0,0,0,0.65), rgba(0,0,0,0.22));
-  color: #fff;
-  transform: translateY(28%);
-  opacity: 0;
-  transition: transform .22s ease, opacity .22s ease;
-  text-align: center;
-}
-
-/* تأثيرات الهوفر والتفعيل */
-.brand-features .img-card:hover .overlay,
-.brand-features .img-card.is-active .overlay {
-  transform: translateY(0%);
-  opacity: 1;
-}
-
-.brand-features .img-card:hover img,
-.brand-features .img-card.is-active img {
-  transform: scale(1.04);
-}
-
-.brand-features .img-card.blurred {
-  filter: blur(4px) grayscale(.08);
-  opacity: 0.6;
-  pointer-events: none;
-  transform: scale(.995);
-}
-
-/* تحسين العرض للموبايل */
-@media (max-width: 768px) {
-    .brand-features .img-card {
-        width: 100% !important;
-        max-width: 250px;
+function initAuth() {
+    // التأكد من أن مكتبة الفايربيز موجودة
+    if (!window.firebaseAuth) {
+        console.error("Firebase not loaded yet.");
+        return;
     }
+
+    const { 
+        auth, 
+        signInWithEmailAndPassword, 
+        createUserWithEmailAndPassword, 
+        ADMIN_EMAIL 
+    } = window.firebaseAuth;
+
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+
+    // -----------------------------------------
+    // 1. منطق تسجيل الدخول (Login)
+    // -----------------------------------------
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginUsername').value.trim(); // المستخدم قد يكتب ايميل هنا
+            const pass = document.getElementById('loginPassword').value;
+            const btn = loginForm.querySelector('button');
+
+            if (!email || !pass) {
+                alert("الرجاء إدخال الإيميل وكلمة المرور");
+                return;
+            }
+
+            // تغيير الزر لـ "جار التحميل"
+            const originalBtnText = btn.textContent;
+            btn.textContent = "Checking...";
+            btn.disabled = true;
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+                const user = userCredential.user;
+
+                // التوجيه حسب نوع المستخدم
+                if (user.email === ADMIN_EMAIL) {
+                    window.location.href = './pages/admin.html';
+                } else {
+                    window.location.href = './pages/dashboard.html';
+                }
+
+            } catch (error) {
+                console.error(error);
+                let msg = "خطأ في تسجيل الدخول.";
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
+                    msg = "الإيميل أو كلمة المرور غير صحيحة.";
+                } else if (error.code === 'auth/wrong-password') {
+                    msg = "كلمة المرور غير صحيحة.";
+                }
+                alert(msg);
+                btn.textContent = originalBtnText;
+                btn.disabled = false;
+            }
+        });
+    }
+
+    // -----------------------------------------
+    // 2. منطق إنشاء حساب جديد (Register)
+    // -----------------------------------------
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('regEmail').value.trim();
+            const pass = document.getElementById('regPassword').value;
+            // const name = document.getElementById('regUsername').value; // يمكن حفظ الاسم لاحقاً في البروفايل
+            const btn = registerForm.querySelector('button');
+
+            if (!email || !pass) {
+                alert("الرجاء ملء جميع البيانات");
+                return;
+            }
+
+            if (pass.length < 6) {
+                alert("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+                return;
+            }
+
+            btn.textContent = "Creating...";
+            btn.disabled = true;
+
+            try {
+                // إنشاء الحساب في فايربيز
+                await createUserWithEmailAndPassword(auth, email, pass);
+                
+                alert("تم إنشاء الحساب بنجاح! 🎉");
+                
+                // === هنا التعديل اللي طلبته ===
+                // التوجيه للداش بورد مباشرة بدل البروفايل
+                window.location.href = './pages/dashboard.html'; 
+
+            } catch (error) {
+                console.error(error);
+                let msg = "حدث خطأ أثناء الإنشاء.";
+                if (error.code === 'auth/email-already-in-use') {
+                    msg = "هذا الإيميل مستخدم بالفعل.";
+                } else if (error.code === 'auth/weak-password') {
+                    msg = "كلمة المرور ضعيفة جداً.";
+                }
+                alert(msg);
+                btn.textContent = "Create Account";
+                btn.disabled = false;
+            }
+        });
+    }
+}
+
+// دالة بسيطة للتبديل بين تسجيل الدخول وإنشاء الحساب
+function setupFormToggles() {
+    const toggles = document.querySelectorAll('.toggle-form-link');
+    toggles.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetForm = link.getAttribute('data-form'); // 'login' or 'register'
+            
+            document.querySelectorAll('.form-section').forEach(sec => {
+                sec.classList.remove('active');
+                sec.style.position = 'absolute';
+                sec.style.opacity = '0';
+                sec.style.visibility = 'hidden';
+            });
+
+            const activeSec = document.querySelector(`.${targetForm}-section`);
+            if (activeSec) {
+                activeSec.classList.add('active');
+                activeSec.style.position = 'relative';
+                activeSec.style.opacity = '1';
+                activeSec.style.visibility = 'visible';
+            }
+        });
+    });
 }
