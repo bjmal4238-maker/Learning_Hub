@@ -1,207 +1,195 @@
-/* admin.css — منظف ومجمّع (احتفظت بكل المتغيرات والسلوك) */
+/* admin.css — Full Admin Page Styles (Responsive) */
 
-/* Base: import theme */
-@import url("theme.css");
-
-/* Page layout */
-body { padding: var(--space-8); font-family: "Cairo", sans-serif; }
-.admin-container { max-width: 980px; margin: 48px auto; padding: 20px; gap: 18px; }
-
-/* Headings & separators */
-h1, h2 { color: var(--text); margin-bottom: var(--space-2); }
-h2 { font-size: var(--text-xl); margin-bottom: var(--space-4); }
-hr { border: none; height: 1px; background: var(--border); margin: var(--space-8) 0; }
-
-/* Cards */
-.card,
-.admin-container .card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  padding: var(--space-6);
-  border-radius: var(--radius-md);
-  margin: var(--space-6) 0;
-  box-shadow: var(--shadow-sm);
+:root {
+  /* ألوان الثيم (Dark Mode) */
+  --bg-color: #111827;       /* خلفية الصفحة */
+  --card-bg: #1f2937;        /* خلفية الكروت */
+  --text-main: #f3f4f6;      /* لون النصوص الأساسي */
+  --text-muted: #9ca3af;     /* لون النصوص الفرعي */
+  --border-color: #374151;   /* لون الحدود */
+  --accent-color: #3b82f6;   /* اللون الأزرق الأساسي */
+  --accent-hover: #2563eb;   /* الأزرق عند الوقوف عليه */
+  --danger-color: #ef4444;   /* الأحمر للحذف والخروج */
+  --success-color: #10b981;  /* الأخضر للنجاح */
 }
 
-/* Form controls */
-label { display:block; margin-bottom:var(--space-2); color:var(--text); font-weight:600; }
-input, textarea {
-  width:100%;
-  padding: var(--space-3) var(--space-4);
-  margin-bottom: var(--space-4);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--bg-alt);
-  color: var(--text);
+/* إعدادات الصفحة العامة */
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  padding: 20px;
+  direction: rtl; /* اتجاه الصفحة يمين ليسار */
+  line-height: 1.6;
+}
+
+/* الحاوية اللي ماسكة المحتوى كله */
+.admin-container {
+  max-width: 800px; /* أقصى عرض للكمبيوتر */
+  margin: 0 auto;   /* توسيط في الشاشة */
+  padding: 0 10px;
+}
+
+/* العناوين */
+h1 { font-size: 2rem; margin-bottom: 0.5rem; margin-top: 0; color: white; }
+h2 { font-size: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-top: 0; }
+p#admin-welcome { color: var(--text-muted); margin-bottom: 25px; font-size: 1.1rem; }
+
+/* الفواصل */
+hr { border: 0; border-top: 1px solid var(--border-color); margin: 30px 0; }
+
+/* الكروت (المربعات الرمادي) */
+.card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* -------------------
+   تنسيق الفورم (الإدخال)
+   ------------------- */
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 15px;
+}
+
+/* كل أنواع حقول الإدخال */
+.small-input, 
+input[type="text"], 
+textarea, 
+select {
+  width: 100%; /* ياخد العرض بالكامل */
+  background-color: #111827; /* لون أغمق من الكارت */
+  border: 1px solid var(--border-color);
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  box-sizing: border-box; /* عشان البادينج مايبوظش العرض */
+  transition: border-color 0.2s ease;
   font-family: inherit;
-  font-size: var(--text-base);
-  box-sizing: border-box;
 }
-input:focus, textarea:focus {
+
+.small-input:focus {
+  border-color: var(--accent-color);
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(116,148,236,0.1);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-/* Small inputs used in admin */
-.small-input {
-  width:100%;
-  padding:10px 12px;
-  border-radius:8px;
-  border:1px solid var(--border);
-  background:var(--bg-alt);
-  color:var(--text);
-  margin-top:6px;
-  margin-bottom:8px;
-  font-size:14px;
-}
-
-/* Course item */
-.course-item {
-  background: var(--bg-alt);
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-3);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  border:1px solid var(--border);
-  gap:var(--space-3);
-  flex-wrap:wrap;
-}
-.course-item h3 { margin:0; flex:1; min-width:200px; }
-.course-item p { margin:0; color:var(--text-muted); flex:1; min-width:250px; }
-.course-item button { padding: var(--space-2) var(--space-3); font-size:12px; white-space:nowrap; }
-
-/* Course list rows */
-.course-row {
-  display:block;
-  padding:12px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,0.03);
-  margin-bottom:10px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
-}
-
-/* Statistics */
-#userCount { color: var(--accent); font-weight:700; font-size:var(--text-lg); }
-#courseMsg { min-height:20px; margin-top:10px; font-weight:600; color:#8bd48b; }
-
-/* Unified admin buttons */
+/* -------------------
+   تنسيق الأزرار
+   ------------------- */
 .contact-btn {
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding:10px 14px;
-  border-radius:10px;
-  border:0;
-  cursor:pointer;
-  font-weight:700;
-  color:#fff;
-  background: linear-gradient(90deg,#2f81f7,#5f7fd4);
-  box-shadow: 0 6px 18px rgba(47,129,247,0.12);
-  transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
-  font-size:14px;
-}
-.contact-btn.small, .btn.small { padding:6px 10px; font-size:13px; }
-
-/* Variants */
-.contact-btn.secondary,
-.contact-btn[style*="background:#6b7280"] {
-  background:#6b7280;
-  box-shadow:none;
-}
-.contact-btn.danger,
-.contact-btn[style*="background:#ef4444"] {
-  background: linear-gradient(90deg,#ef4444,#d1342f);
-  box-shadow: 0 6px 18px rgba(239,68,68,0.12);
-}
-.contact-btn[style*="background:#f59e0b"] {
-  background: linear-gradient(90deg,#f59e0b,#d97706);
-  box-shadow: 0 6px 18px rgba(245,158,11,0.12);
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  display: inline-block;
 }
 
-/* Hover */
-.contact-btn:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
-  opacity: 0.98;
+.contact-btn:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-1px);
 }
 
-/* Responsive */
+.contact-btn:active { transform: translateY(0); }
+.contact-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* أزرار خاصة */
+#clearCourseForm {
+  background-color: #4b5563 !important; /* رمادي */
+  margin-right: 10px;
+}
+#clearCourseForm:hover { background-color: #374151 !important; }
+
+#logoutAdmin {
+  background-color: var(--danger-color) !important; /* أحمر */
+  width: 100%;
+  padding: 15px;
+  margin-top: 20px;
+  font-size: 16px;
+}
+#logoutAdmin:hover { background-color: #dc2626 !important; }
+
+/* -------------------
+   قائمة الفيديوهات (List)
+   ------------------- */
+#coursesList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.course-row {
+  display: flex;
+  justify-content: space-between; /* يوزع المحتوى يمين وشمال */
+  align-items: center;
+  background: rgba(0,0,0,0.2);
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+
+.course-row:hover { background: rgba(0,0,0,0.4); }
+
+.course-row button {
+  background-color: var(--danger-color);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+}
+.course-row button:hover { background-color: #dc2626; }
+
+/* -------------------
+   📱 التجاوب مع الموبايل (Mobile Responsive)
+   ------------------- */
 @media (max-width: 768px) {
-  body { padding: var(--space-4); }
-  .card { padding: var(--space-4); }
-  .course-item { flex-direction:column; align-items:flex-start; }
-  .course-item button { width:100%; }
-}
-@media (max-width: 640px) {
-  .admin-container { padding:12px; margin:18px; }
-  .contact-btn { width:100%; display:block; }
-  .contact-btn + .contact-btn { margin-top:8px; margin-left:0 !important; }
-}/* --- Admin Responsive Fixes (Mobile) --- */
-
-/* 1. تظبيط الحاوية الأساسية في الموبايل */
-@media (max-width: 768px) {
-    .admin-container {
-        width: 95% !important; /* تخلي البوكس ياخد عرض الشاشة كلها تقريباً */
-        padding: 15px !important;
-        margin: 20px auto;
-    }
-
-    /* 2. تظبيط الكروت (الخلفيات الرمادي) */
-    .card {
-        padding: 15px !important;
-    }
-
-    /* 3. أهم جزء: تخلي الليبل والحقل تحت بعض */
-    label {
-        display: flex !important;
-        flex-direction: column; /* يخلي الكلام فوق والحقل تحته */
-        gap: 8px; /* مسافة بينهم */
-        margin-bottom: 15px;
-        width: 100%;
-        font-weight: bold;
-    }
-
-    /* 4. إجبار الحقول إنها تاخد العرض كامل */
-    .small-input, 
-    input[type="text"], 
-    textarea, 
-    select {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box; /* عشان الـ Padding ميبوظش العرض */
-        height: auto;
-        padding: 12px; /* تكبير المساحة للكتابة */
-        font-size: 16px; /* خط واضح للموبايل */
-    }
-
-    /* 5. تظبيط الأزرار (حفظ ومسح) */
-    .contact-btn {
-        width: 100% !important; /* الزرار ياخد العرض كله */
-        display: block;
-        margin: 10px 0 !important; /* مسافات بين الأزرار */
-        padding: 12px;
-    }
+    /* الحاوية تاخد الشاشة كلها */
+    .admin-container { width: 100%; padding: 10px; margin: 0; }
     
-    /* الحاوية اللي ماسكة الأزرار */
+    /* تقليل حواف الكارت */
+    .card { padding: 15px; }
+
+    h1 { font-size: 1.7rem; text-align: center; }
+    h2 { font-size: 1.3rem; }
+    
+    /* تظبيط الأزرار تحت بعض */
     .card > div[style*="margin-top"] {
         display: flex;
         flex-direction: column;
         gap: 10px;
     }
 
-    /* زر المسح ياخد مسافة كويسة */
-    #clearCourseForm {
-        margin-left: 0 !important; /* الغاء المارجن القديم */
+    .contact-btn {
+        width: 100%; /* الزرار بعرض الشاشة */
+        margin: 0 !important;
+        padding: 14px; /* منطقة لمس أكبر */
+        text-align: center;
     }
 
-    /* 6. تحسين شكل القائمة (الفيديوهات اللي تحت) */
+    #clearCourseForm { margin-right: 0; }
+
+    /* شكل القائمة في الموبايل */
     .course-row {
-        flex-direction: column; /* يخلي الصورة والعنوان والزرار فوق بعض */
-        align-items: flex-start !important;
+        flex-direction: column; /* العناصر فوق بعض */
+        align-items: flex-start;
         gap: 15px;
     }
     
@@ -209,12 +197,12 @@ input:focus, textarea:focus {
         width: 100%;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 15px;
     }
     
     .course-row button {
-        width: 100%; /* زر الحذف يبقى عريض */
+        width: 100%; /* زر الحذف كبير */
+        padding: 12px;
         margin-top: 5px;
     }
 }
-
