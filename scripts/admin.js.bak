@@ -1,0 +1,189 @@
+document.addEventListener('DOMContentLoaded', () => {
+  const username = localStorage.getItem("username");
+  if (!username) {
+    window.location.href = "/";
+    return;
+  }
+
+  async function isAdmin() {
+    try {
+      const r = await fetch(`/api/is-admin?username=${encodeURIComponent(username)}`, { cache: "no-store" });
+      if (!r.ok) {
+        // عرض خطأ ثم إعادة توجيه
+        Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل التحقق من الصلاحية' }).then(()=> window.location.href = "/");
+        return false;
+      }
+      const d = await r.json().catch(()=> ({}));
+      if (!d.isAdmin) {
+        Swal.fire({ icon: 'error', title: 'غير مصرح', text: 'لا تملك صلاحية الوصول للوحة التحكم', confirmButtonText: 'حسناً' })
+          .then(() => window.location.href = "/");
+        return false;
+      }
+      return true;
+    } catch (e) {
+      Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل التحقق من الصلاحيات' }).then(()=> window.location.href = "/");
+      return false;
+    }
+  }
+
+  function setupUI() {
+    const addBtn = document.getElementById("addCourseBtn");
+    const clearBtn = document.getElementById("clearCourseForm");
+    const logoutBtn = document.getElementById("logoutAdmin");
+
+    if (addBtn) {
+      addBtn.onclick = async () => {
+        const titleEl = document.getElementById("courseTitle");
+        const descEl = document.getElementById("courseDesc");
+        const imgEl = document.getElementById("courseImg");
+        const catEl = document.getElementById("courseCategory");
+        const msgEl = document.getElementById("courseMsg");
+
+        const title = titleEl?.value.trim() || '';
+        const desc = descEl?.value.trim() || '';
+        const img = imgEl?.value.trim() || '';
+        const category = (catEl?.value || 'featured').trim();
+
+        if (!title) {
+          Swal.fire({ icon: 'warning', title: 'مطلوب', text: 'أدخل عنوان الكورس' });
+          return;
+        }
+
+        try {
+          const res = await fetch("/api/admin/course", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, title, description: desc, image: img, category })
+          });
+          const data = await res.json().catch(()=> ({}));
+          if (res.ok) {
+            Swal.fire({ icon: 'success', title: 'تم', text: data.message || 'تمت الإضافة' });
+            if (msgEl) msgEl.textContent = data.message || '';
+            if (titleEl) titleEl.value = '';
+            if (descEl) descEl.value = '';
+            if (imgEl) imgEl.value = '';
+            // حفظ نسخة محلية كـ fallback
+            try {
+              const localArr = JSON.parse(localStorage.getItem('local_courses') || '[]');
+              localArr.push({ id: Date.now(), title, description: desc, image: img, category });
+              localStorage.setItem('local_courses', JSON.stringify(localArr));
+            } catch(e) {}
+            await loadCourses();
+            await loadUsers();
+          } else {
+            Swal.fire({ icon: 'error', title: 'خطأ', text: data.message || 'فشل الحفظ' });
+          }
+        } catch (e) {
+          Swal.fire({ icon: 'error', title: 'خطأ', text: 'حدث خطأ أثناء الاتصال' });
+        }
+      };
+    }
+
+    if (clearBtn) {
+      clearBtn.onclick = () => {
+        const titleEl = document.getElementById("courseTitle");
+        const descEl = document.getElementById("courseDesc");
+        const imgEl = document.getElementById("courseImg");
+        const msgEl = document.getElementById("courseMsg");
+        if (titleEl) titleEl.value = '';
+        if (descEl) descEl.value = '';
+        if (imgEl) imgEl.value = '';
+        if (msgEl) msgEl.textContent = '';
+      };
+    }
+
+    if (logoutBtn) {
+      logoutBtn.onclick = () => {
+        localStorage.removeItem("username");
+        window.location.href = "/";
+      };
+    }
+  }
+
+  async function loadCourses() {
+    try {
+      const res = await fetch("/api/courses");
+      const container = document.getElementById("coursesList");
+      if (!res.ok) {
+        if (container) container.innerHTML = 'فشل تحميل الكورسات';
+        return;
+      }
+      const d = await res.json();
+      const list = d.courses || d || [];
+      if (list.length === 0) {
+        if (container) container.innerHTML = '<p>لا توجد كورسات حتى الآن.</p>';
+        return;
+      }
+      if (container) {
+        container.innerHTML = list.map(c => `
+          <div class="course-item" style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid rgba(0,0,0,0.06)">
+            <div style="display:flex;gap:12px;align-items:center">
+              <img src="${c.image || ''}" alt="" style="width:60px;height:40px;object-fit:cover;border-radius:6px">
+              <span>${c.title}</span>
+            </div>
+            <div>
+              <button onclick="confirmDeleteCourse(${c.id})" style="background:#ff6b6b;border:none;padding:6px 8px;border-radius:6px;color:#fff;cursor:pointer">حذف</button>
+            </div>
+          </div>
+        `).join("");
+      }
+    } catch (e) {
+      const container = document.getElementById("coursesList");
+      if (container) container.innerHTML = 'فشل تحميل الكورسات';
+    }
+  }
+
+  window.confirmDeleteCourse = async function(id) {
+    const result = await Swal.fire({
+      title: 'تأكيد الحذف',
+      text: 'هل أنت متأكد أنك تريد حذف هذا الكورس؟',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'حذف',
+      cancelButtonText: 'إلغاء'
+    });
+    if (!result.isConfirmed) return;
+    try {
+      const r = await fetch(`/api/admin/course/${id}?username=${encodeURIComponent(username)}`, { method: "DELETE" });
+      if (r.ok) {
+        Swal.fire({ icon: 'success', title: 'تم الحذف' });
+        await loadCourses();
+        await loadUsers();
+      } else {
+        const d = await r.json().catch(()=>({}));
+        Swal.fire({ icon: 'error', title: 'خطأ', text: d.message || 'فشل الحذف' });
+      }
+    } catch (e) {
+      Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل الاتصال' });
+    }
+  };
+
+  async function loadUsers() {
+    try {
+      const r = await fetch("/api/admin/users?username=" + encodeURIComponent(username));
+      if (!r.ok) {
+        const el = document.getElementById("userCount");
+        if (el) el.textContent = '-';
+        return;
+      }
+      const d = await r.json();
+      const el = document.getElementById("userCount");
+      if (el) el.textContent = d.count ?? '-';
+    } catch (e) {
+      const el = document.getElementById("userCount");
+      if (el) el.textContent = '-';
+    }
+  }
+
+  // تشغيل التحقق ثم تهيئة الواجهة
+  (async () => {
+    const ok = await isAdmin();
+    if (!ok) return;
+    const welcomeEl = document.getElementById('admin-welcome');
+    if (welcomeEl) welcomeEl.textContent = `مرحباً يا ${username} — يمكنك إدارة الموقع من هنا`;
+    setupUI();
+    await loadCourses();
+    await loadUsers();
+  })();
+
+});
