@@ -1,103 +1,186 @@
-/* profile.css — cleaned & fixed (responsive + safe) */
+/* profile.css — Professional Design */
 
-/* layout */
-.profile-page { padding-top: 90px; }
-.profile-grid { display: grid; grid-template-columns: 320px 1fr; gap: 36px; align-items: start; }
+.profile-page {
+    padding-top: 40px;
+    padding-bottom: 60px;
+}
 
-/* cards */
+/* تخطيط الشبكة (Grid Layout) */
+.profile-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr; /* عمود صغير للصورة وعمود كبير للفورم */
+    gap: 30px;
+    align-items: start;
+}
+
+/* تصميم الكروت */
 .profile-card,
 .profile-form-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  padding: 24px;
-  border-radius: var(--radius-lg);
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-/* avatar large (fixed correct size: 160px) */
+/* كارت المعلومات الجانبي */
+.profile-card {
+    text-align: center;
+}
+
 .avatar-large-wrap {
-  width: 160px;
-  height: 160px;
-  max-width: 40vw;
-  max-height: 40vw;
-  margin: 0 auto 12px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--card);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-}
-#profileAvatarLarge {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;
-  object-position: center;
-  display: block;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 20px;
+    border-radius: 50%; /* دائري */
+    overflow: hidden;
+    border: 4px solid var(--card);
+    box-shadow: 0 0 0 2px var(--accent); /* إطار ملون */
 }
 
-/* avatar small / preview inside form */
-#avatarPreviewWrap {
-  width: 120px;
-  height: 120px;
-  max-width: 30vw;
-  max-height: 30vw;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--card);
-  cursor: pointer;
-}
-#profileAvatarLargeSmall {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;
-  object-position: center;
-  display: block;
+.avatar-large-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-/* prevent images from overflowing card layout */
-.profile-card img,
-.profile-form-card img { max-width: 100%; display: block; }
+.profile-card h3 {
+    margin: 10px 0 5px;
+    color: var(--text);
+    font-size: 1.2rem;
+}
 
-/* form rows */
-.form-row { margin-bottom: 14px; }
-.form-row label { display: block; margin-bottom: 6px; font-weight: 600; }
-.form-row input,
+.profile-card p.muted {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    word-break: break-all;
+}
+
+/* تنسيق منطقة رفع الصورة */
+.avatar-upload-area {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px dashed var(--border);
+}
+
+.avatar-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    border: 2px solid var(--border);
+}
+
+.avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.overlay-label {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    font-size: 10px;
+    text-align: center;
+    padding: 3px 0;
+}
+
+.upload-controls {
+    flex: 1;
+}
+
+.upload-btn {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 10px;
+    transition: background 0.2s;
+}
+
+.upload-btn:hover {
+    background: var(--accent-hover);
+}
+
+#avatarFile {
+    display: none; /* إخفاء زر الملف الأصلي القبيح */
+}
+
+.url-input-group label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* الحقول العامة */
+.form-row {
+    margin-bottom: 20px;
+}
+
+.form-row label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.95rem;
+}
+
+.form-row input[type="text"],
+.form-row input[type="url"],
 .form-row textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--glass);
-  color: var(--text);
-  font-family: inherit;
-  box-sizing: border-box;
+    width: 100%;
+    padding: 12px;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s;
 }
 
-/* actions */
-.form-actions { display:flex; gap:12px; margin-top:12px; flex-wrap:wrap; }
-.form-actions .btn { min-width:120px; }
-
-/* helper text */
-.help-note { margin-top:16px; font-size:13px; color:var(--text-muted); }
-.muted { color:var(--text-muted); }
-
-/* responsive */
-@media (max-width: 860px) {
-  .profile-grid { grid-template-columns: 1fr; }
-  .avatar-large-wrap { margin: 0 auto; }
+.form-row input:focus,
+.form-row textarea:focus {
+    border-color: var(--accent);
+    outline: none;
 }
 
-/* force header avatar to stay small and circular */
-header .user-profile .avatar,
-#userAvatar {
-  width: 40px !important;
-  height: 40px !important;
-  min-width: 40px !important;
-  min-height: 40px !important;
-  max-width: 40px !important;
-  max-height: 40px !important;
-  border-radius: 50% !important;
-  object-fit: cover !important;
-  object-position: center !important;
-  display: block !important;
+.form-actions {
+    text-align: right;
+    margin-top: 10px;
+}
+
+.form-actions .btn {
+    padding: 12px 30px;
+    font-size: 16px;
+}
+
+/* تجاوب الموبايل */
+@media (max-width: 768px) {
+    .profile-grid {
+        grid-template-columns: 1fr; /* عمود واحد */
+        gap: 20px;
+    }
+    
+    .profile-page {
+        padding-top: 20px;
+    }
+
+    .avatar-upload-area {
+        flex-direction: column;
+        text-align: center;
+    }
 }
