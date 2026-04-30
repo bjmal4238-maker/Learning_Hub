@@ -1,15 +1,18 @@
 /**
- * Firebase Configuration
- * Clean Version - Fixed for LearningHub
+ * Firebase Configuration — Updated with Google Auth & Phone OTP support
  */
 
-// 1. استيراد المكتبات (Import Libraries)
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
 import { 
     getAuth, 
     onAuthStateChanged, 
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
+    sendPasswordResetEmail,
+    GoogleAuthProvider,
+    signInWithPopup,
+    RecaptchaVerifier,
+    signInWithPhoneNumber,
     signOut 
 } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js';
 import { 
@@ -17,14 +20,16 @@ import {
     collection, 
     addDoc, 
     getDocs, 
+    getDoc,
+    setDoc,
     updateDoc, 
     deleteDoc, 
     doc, 
     query, 
-    orderBy 
+    orderBy,
+    where
 } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
 
-// 2. بيانات مشروعك (Config) - من الملف اللي رفعته
 const firebaseConfig = {
     apiKey: "AIzaSyC30P-lrF93dLMKpsFOjAwLSs2hs4ElEX0",
     authDomain: "learninghub-2b8ea.firebaseapp.com",
@@ -34,17 +39,13 @@ const firebaseConfig = {
     appId: "1:613207882580:web:47ad6220279979d20de6c1"
 };
 
-// 3. إيميل الأدمن
-// ⚠️ تنبيه: تأكد إن الإيميل ده هو نفس الإيميل اللي عملته في Firebase Authentication بالظبط
-// الملف كان مكتوب فيه "4238" بس أنت قولت في الشات "14238" .. راجع الرقم كويس!
-const ADMIN_EMAIL = "bjmal4238@gmail.com"; 
+const ADMIN_EMAIL = "bjmal4238@gmail.com";
 
-// 4. تشغيل التطبيق (Initialization)
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
-// 5. تصدير الأدوات عشان باقي الملفات تشوفها (Global Export)
 window.firebaseAuth = {
     auth,
     db,
@@ -52,15 +53,24 @@ window.firebaseAuth = {
     onAuthStateChanged,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
+    sendPasswordResetEmail,
+    GoogleAuthProvider,
+    signInWithPopup,
+    googleProvider,
+    RecaptchaVerifier,
+    signInWithPhoneNumber,
     signOut,
     collection,
     addDoc,
     getDocs,
+    getDoc,
+    setDoc,
     updateDoc,
     deleteDoc,
     doc,
     query,
-    orderBy
+    orderBy,
+    where
 };
 
-console.log('✅ Firebase initialized successfully (Clean Version)!');
+console.log('✅ Firebase initialized successfully!');
