@@ -5,25 +5,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>لوحة التحكم - Admin</title>
-    
-    <!-- ?v=2 عشان يجبر المتصفح يحمل التنسيق الجديد -->
-    <link rel="stylesheet" href="../styles/admin.css?v=2">
-    
-    <!-- مكتبات التنبيهات والتشفير -->
+    <link rel="stylesheet" href="../styles/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 
 <body data-theme="dark">
-
     <div class="admin-container">
-        <h1>لوحة التحكم</h1>
+        <h1>⚙️ لوحة التحكم</h1>
         <p id="admin-welcome">مرحباً يا أدمن 👑 — يمكنك إدارة الموقع من هنا</p>
         <hr/>
 
-        <!-- قسم إضافة الفيديو -->
+        <!-- ===== قسم إضافة الفيديو ===== -->
         <section class="card" aria-labelledby="addTitle">
-            <h2 id="addTitle">إضافة / تعديل فيديو</h2>
+            <h2 id="addTitle">📹 إضافة فيديو جديد</h2>
 
             <input type="hidden" id="courseId" />
 
@@ -49,34 +44,88 @@
 
             <label>التصنيف
                 <select id="courseCategory" class="small-input">
-                  <option value="featured">Featured (مميز)</option>
-                  <option value="cybersecurity">Cybersecurity</option>
-                  <option value="programming">Programming</option>
-                  <option value="ai">AI & ML</option>
-                  <option value="networking">Networking</option>
-                  <option value="webdev">Web Dev</option>
-                  <option value="datascience">Data Science</option>
+                    <option value="featured">Featured (مميز)</option>
+                    <option value="cybersecurity">Cybersecurity</option>
+                    <option value="programming">Programming</option>
+                    <option value="ai">AI & ML</option>
+                    <option value="networking">Networking</option>
+                    <option value="webdev">Web Dev</option>
+                    <option value="datascience">Data Science</option>
                 </select>
             </label>
 
-            <div style="margin-top:10px;">
-                <button class="contact-btn" id="addCourseBtn">حفظ الفيديو</button>
-                <button class="contact-btn" id="clearCourseForm">مسح الحقول</button>
+            <label style="display:flex;align-items:center;gap:10px;margin-top:15px;cursor:pointer;">
+                <input type="checkbox" id="courseRequiresCode" style="width:auto;margin:0;">
+                <span>🔒 هذا الفيديو يحتاج كود اشتراك لمشاهدته</span>
+            </label>
+
+            <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="contact-btn" id="addCourseBtn">💾 حفظ الفيديو</button>
+                <button class="contact-btn" id="clearCourseForm" style="background:#4b5563;">🗑️ مسح الحقول</button>
             </div>
         </section>
 
         <hr/>
 
-        <!-- قسم عرض الفيديوهات -->
+        <!-- ===== قسم عرض الفيديوهات ===== -->
         <section class="card">
-            <h2>كل الفيديوهات</h2>
+            <h2>📋 كل الفيديوهات</h2>
             <div id="coursesList">جار التحميل...</div>
         </section>
 
-        <button class="contact-btn" id="logoutAdmin">تسجيل خروج</button>
+        <hr/>
+
+        <!-- ===== قسم أكواد الاشتراك ===== -->
+        <section class="card" aria-labelledby="codesTitle">
+            <h2 id="codesTitle">🎟️ أكواد الاشتراك</h2>
+            
+            <div id="codesStats" style="margin-bottom:16px;font-size:13px;color:#9ca3af;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid #374151;">
+                جار تحميل الإحصائيات...
+            </div>
+
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
+                <div>
+                    <label style="font-size:13px;margin-bottom:6px;">عدد الأكواد</label>
+                    <input id="codesCount" class="small-input" type="number" min="1" max="200" value="50" 
+                           style="width:110px;">
+                </div>
+                <div>
+                    <label style="font-size:13px;margin-bottom:6px;">بادئة الكود (Prefix)</label>
+                    <input id="codesPrefix" class="small-input" type="text" value="LH" maxlength="6"
+                           placeholder="مثال: LH" style="width:120px;">
+                </div>
+                <button class="contact-btn" id="generateCodesBtn" style="height:40px;">
+                    ⚡ توليد الأكواد
+                </button>
+            </div>
+
+            <div>
+                <textarea id="generatedCodesList" readonly 
+                    style="display:none;width:100%;background:#111827;color:#3fb950;
+                           border:1px solid #374151;border-radius:8px;padding:12px;
+                           font-family:monospace;font-size:13px;height:200px;
+                           resize:vertical;box-sizing:border-box;"
+                    placeholder="الأكواد ستظهر هنا..."></textarea>
+            </div>
+
+            <div style="margin-top:10px;">
+                <button class="contact-btn" id="copyCodesBtn" style="display:none;background:#3fb950;">
+                    📋 نسخ كل الأكواد
+                </button>
+            </div>
+            
+            <p style="margin-top:14px;font-size:12px;color:#6b7280;">
+                💡 الأكواد تُحفظ تلقائياً في Firebase. المستخدم يدخل الكود عند التسجيل ولا يمكن استخدام الكود مرتين.
+            </p>
+        </section>
+
+        <hr/>
+
+        <button class="contact-btn" id="logoutAdmin" style="background:#ef4444;width:100%;padding:14px;font-size:16px;">
+            🚪 تسجيل خروج
+        </button>
     </div>
 
-    <!-- سكربتات الفايربيز والتشغيل -->
     <script type="module" src="../scripts/firebase-config.js"></script>
     <script type="module" src="../scripts/admin.js"></script>
 </body>
