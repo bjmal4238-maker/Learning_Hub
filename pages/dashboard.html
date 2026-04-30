@@ -1,259 +1,332 @@
-<!DOCTYPE html>
-<html lang="en">
+/* scripts/dashboard.js — Fixed Version */
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Learning Hub - Dashboard</title>
+document.addEventListener('DOMContentLoaded', () => {
+    // Apply saved theme immediately
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
 
-    <!-- styles -->
-    <link rel="stylesheet" href="../styles/theme.css" />
-    <link rel="stylesheet" href="../styles/dashboard.css" />
+    setTimeout(() => initDashboard(), 1000);
+});
 
-    <!-- icons + libs -->
-    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-</head>
+function initDashboard() {
+    if (!window.firebaseAuth) {
+        console.error("Firebase not loaded!");
+        setTimeout(() => initDashboard(), 500);
+        return;
+    }
 
-<body data-theme="dark">
-    <!-- HEADER -->
-    <header class="site-header">
-        <div class="container header-content">
-            <a href="#" class="logo"><i class="bx bxs-book"></i><span>Learning Hub</span></a>
+    const { db, collection, getDocs, auth, signOut, onAuthStateChanged, doc, getDoc } = window.firebaseAuth;
 
-            <nav class="nav-main">
-                <a href="#featured" class="nav-link" data-section="featured"><i class="bx bxs-star"></i> Featured</a>
-                <a href="#cybersecurity" class="nav-link" data-section="cybersecurity"><i class="bx bxs-shield"></i> Cybersecurity</a>
-                <a href="#programming" class="nav-link" data-section="programming"><i class="bx bxs-code-curly"></i> Programming</a>
-                <a href="#ai" class="nav-link" data-section="ai"><i class="bx bxs-brain"></i> AI & ML</a>
-                <a href="#networking" class="nav-link" data-section="networking"><i class="bx bxs-network-chart"></i> Networking</a>
-                <a href="#webdev" class="nav-link" data-section="webdev"><i class="bx bxs-palette"></i> Web Dev</a>
-                <a href="#datascience" class="nav-link" data-section="datascience"><i class="bx bxs-bar-chart-alt-2"></i> Data Science</a>
-            </nav>
+    // Theme Switcher
+    const themeSelect = document.getElementById('themeSelect');
+    if (themeSelect) {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.body.setAttribute('data-theme', savedTheme);
+        themeSelect.value = savedTheme;
+        themeSelect.addEventListener('change', (e) => {
+            document.body.setAttribute('data-theme', e.target.value);
+            localStorage.setItem('theme', e.target.value);
+        });
+    }
 
-            <div class="header-actions">
-                <select id="themeSelect" class="theme-select" title="Theme">
-                    <option value="dark">Dark</option>
-                    <option value="light">Light</option>
-                    <option value="beige">Beige</option>
-                </select>
+    // Load user avatar
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            window.location.href = '../index.html';
+            return;
+        }
+        try {
+            const snap = await getDoc(doc(db, "users", user.uid));
+            if (snap.exists()) {
+                const data = snap.data();
+                const avatarEl = document.getElementById('userAvatar');
+                if (avatarEl && data.photoURL) avatarEl.src = data.photoURL;
+            }
+        } catch(e) { /* no problem */ }
+    });
 
-                <div class="user-profile">
-                    <img id="userAvatar" class="avatar" src="https://peoplealchemy.com/wp-content/uploads/2023/11/hand-digital-learning.jpg" alt="User" />
-                    <div class="profile-menu">
-                        <button class="btn small" id="profileBtn">Profile</button>
-                        <button class="btn small outline" id="logoutBtn">Logout</button>
-                    </div>
+    // Load courses
+    loadCourses(db, collection, getDocs, auth, doc, getDoc);
+
+    // Logout & Profile buttons
+    document.getElementById('logoutBtn')?.addEventListener('click', () => {
+        signOut(auth).then(() => window.location.href = '../index.html');
+    });
+    document.getElementById('profileBtn')?.addEventListener('click', () => {
+        window.location.href = 'profile.html';
+    });
+
+    // Hero buttons — FIX: were broken
+    document.getElementById('exploreCourses')?.addEventListener('click', () => {
+        const target = document.getElementById('featured');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    document.getElementById('aboutBtn')?.addEventListener('click', () => {
+        Swal.fire({
+            title: '🎓 About Learning Hub',
+            html: `
+                <div style="text-align:left;line-height:1.7;color:#888;">
+                    <p><strong style="color:#2a7df6;">Learning Hub</strong> is a professional e-learning platform built to deliver high-quality technical education.</p>
+                    <br>
+                    <p>📚 <strong>500+</strong> curated video courses</p>
+                    <p>🛡️ Cybersecurity, Programming, AI, Networking & more</p>
+                    <p>⚡ Project-based, expert-led learning</p>
+                    <p>🌍 Available globally, in Arabic & English</p>
+                    <br>
+                    <p style="font-size:13px;color:#aaa;">Built with ❤️ for serious learners.</p>
+                </div>
+            `,
+            confirmButtonText: 'Got it!',
+            confirmButtonColor: '#2a7df6',
+            background: 'var(--card)',
+            color: 'var(--text)'
+        });
+    });
+
+    // Nav active state on scroll
+    setupNavScroll();
+    setupModals();
+}
+
+// ===== Nav Scroll Active =====
+function setupNavScroll() {
+    const header = document.querySelector('.site-header');
+    window.addEventListener('scroll', () => {
+        if (header) {
+            header.classList.toggle('scrolled', window.scrollY > 10);
+        }
+    });
+
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link[data-section]');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                navLinks.forEach(link => {
+                    link.classList.toggle('active', link.dataset.section === entry.target.id);
+                });
+            }
+        });
+    }, { rootMargin: '-40% 0px -40% 0px' });
+
+    sections.forEach(s => observer.observe(s));
+}
+
+// ===== Load Courses =====
+async function loadCourses(db, collection, getDocs, auth, docFn, getDoc) {
+    try {
+        const querySnapshot = await getDocs(collection(db, "courses"));
+        if (querySnapshot.empty) return;
+
+        const courses = [];
+        querySnapshot.forEach((d) => courses.push({ id: d.id, ...d.data() }));
+
+        // Check user subscription
+        const user = auth.currentUser;
+        let isSubscribed = false;
+        if (user) {
+            try {
+                const snap = await getDoc(docFn(db, "users", user.uid));
+                if (snap.exists()) {
+                    const data = snap.data();
+                    isSubscribed = data.subscribed === true || data.subscriptionCode != null;
+                }
+            } catch(e) {}
+        }
+
+        renderSection(courses, 'featured', 'featuredGrid', isSubscribed);
+        renderSection(courses, 'cybersecurity', 'cybersecurityGrid', isSubscribed);
+        renderSection(courses, 'programming', 'programmingGrid', isSubscribed);
+        renderSection(courses, 'ai', 'aiGrid', isSubscribed);
+        renderSection(courses, 'networking', 'networkingGrid', isSubscribed);
+        renderSection(courses, 'webdev', 'webdevGrid', isSubscribed);
+        renderSection(courses, 'datascience', 'datascienceGrid', isSubscribed);
+
+    } catch (e) {
+        console.error("Error loading courses:", e);
+    }
+}
+
+function renderSection(allCourses, category, elementId, isSubscribed) {
+    const container = document.getElementById(elementId);
+    if (!container) return;
+
+    const items = allCourses.filter(c => c.category === category);
+    if (items.length === 0) {
+        container.innerHTML = '<p style="color:#777;padding:10px;">لا توجد فيديوهات مضافة في هذا القسم.</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+    items.forEach(item => {
+        const isFree = item.free === true;
+        const canWatch = isFree || isSubscribed;
+
+        const card = document.createElement('div');
+        card.className = 'course-card';
+        card.innerHTML = `
+            <div class="course-thumbnail">
+                <img src="${item.thumbnail || 'https://via.placeholder.com/400x225/1a1a2e/2a7df6?text=Course'}" alt="${item.title}" loading="lazy">
+                <div class="play-btn"><i class="bx bxs-play-circle"></i></div>
+                                ${!isFree && !isSubscribed ? '<div class="unavailable-badge"><i class="bx bxs-lock-alt"></i> Premium</div>' : ""}
+            </div>
+            <div class="course-content">
+                <div class="course-category"><i class="bx bxs-video"></i> VIDEO</div>
+                <h3 class="course-title">${item.title}</h3>
+                <p class="course-description">${item.description || ''}</p>
+                <div class="course-meta">
+                    <div class="course-duration"><i class='bx bx-time'></i> ${item.duration || 'N/A'}</div>
+                    <div class="course-level"><i class='bx bx-bar-chart'></i> ${item.level || 'All Levels'}</div>
                 </div>
             </div>
-        </div>
-    </header>
-
-    <!-- MAIN -->
-    <main class="main-content">
-        <section class="hero">
-            <div class="container">
-                <div class="hero-content">
-                    <h1>Master the Skills That Matter</h1>
-                    <p>Learn from industry experts through structured, project-based courses</p>
-                    <div class="hero-cta">
-                        <button class="btn large" id="exploreCourses"><i class="bx bxs-play-circle"></i> Explore Courses</button>
-                        <button class="btn large outline" id="aboutBtn"><i class="bx bxs-info-circle"></i> Learn More</button>
-                    </div>
-                </div>
+            <div class="video-actions">
+                <button class="btn accent-btn watch-btn" title="Watch">
+                    <i class="bx bxs-show"></i> Watch
+                </button>
+                <button class="btn accent-btn outline preview-btn" title="Preview">
+                    <i class="bx bxs-pulse"></i> Preview
+                </button>
             </div>
-        </section>
+        `;
 
-        <section id="featured" class="section">
-            <div class="container">
-                <div class="section-header">
-                    <h2 class="section-title">Featured Courses</h2>
-                    <p class="section-subtitle">Trending and popular courses this week</p>
-                </div>
-                <div id="featuredGrid" class="courses-grid"></div>
-            </div>
-        </section>
+        const thumb = card.querySelector('.course-thumbnail');
+        const watchBtn = card.querySelector('.watch-btn');
+        const previewBtn = card.querySelector('.preview-btn');
 
-        <section id="cybersecurity" class="section">
-            <div class="container">
-                <div class="section-header">
-                    <div class="section-header-top"><i class="bx bxs-shield"></i>
-                        <h2 class="section-title">Cybersecurity</h2>
-                    </div>
-                    <p class="section-subtitle">Learn ethical hacking, security protocols, and defense mechanisms</p>
-                </div>
-                <div id="cybersecurityGrid" class="courses-grid"></div>
-            </div>
-        </section>
+        const handleWatch = (e) => {
+            if (e) e.stopPropagation();
+            if (!canWatch) {
+                // طلب كود الاشتراك
+                showSubscriptionModal(item);
+            } else {
+                playVideo(item);
+            }
+        };
 
-        <section id="programming" class="section">
-            <div class="container">
-                <div class="section-header">
-                    <div class="section-header-top"><i class="bx bxs-code-curly"></i>
-                        <h2 class="section-title">Programming</h2>
-                    </div>
-                    <p class="section-subtitle">Master languages from Python to JavaScript, C++ to Go</p>
-                </div>
-                <div id="programmingGrid" class="courses-grid"></div>
-            </div>
-        </section>
+        thumb.addEventListener('click', handleWatch);
+        watchBtn.addEventListener('click', handleWatch);
+        previewBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            previewVideo(item);
+        });
 
-        <section id="ai" class="section">
-            <div class="container">
-                <div class="section-header">
-                    <div class="section-header-top"><i class="bx bxs-brain"></i>
-                        <h2 class="section-title">Artificial Intelligence & Machine Learning</h2>
-                    </div>
-                    <p class="section-subtitle">Deep learning, neural networks, natural language processing</p>
-                </div>
-                <div id="aiGrid" class="courses-grid"></div>
-            </div>
-        </section>
+        container.appendChild(card);
+    });
+}
 
-        <section id="networking" class="section">
-            <div class="container">
-                <div class="section-header">
-                    <div class="section-header-top"><i class="bx bxs-network-chart"></i>
-                        <h2 class="section-title">Networking</h2>
-                    </div>
-                    <p class="section-subtitle">TCP/IP, routing, switching, network security, and cloud</p>
-                </div>
-                <div id="networkingGrid" class="courses-grid"></div>
-            </div>
-        </section>
-
-        <section id="webdev" class="section">
-            <div class="container">
-                <div class="section-header">
-                    <div class="section-header-top"><i class="bx bxs-palette"></i>
-                        <h2 class="section-title">Web Development</h2>
-                    </div>
-                    <p class="section-subtitle">Frontend, backend, full-stack, React, Vue, Node.js, and more</p>
-                </div>
-                <div id="webdevGrid" class="courses-grid"></div>
-            </div>
-        </section>
-
-        <section id="datascience" class="section">
-            <div class="container">
-                <div class="section-header">
-                    <div class="section-header-top"><i class="bx bxs-bar-chart-alt-2"></i>
-                        <h2 class="section-title">Data Science</h2>
-                    </div>
-                    <p class="section-subtitle">Data analysis, visualization, statistics, and big data technologies</p>
-                </div>
-                <div id="datascienceGrid" class="courses-grid"></div>
-            </div>
-        </section>
-
-        <section id="mycourses" class="section">
-            <div class="container">
-                <div class="section-header">
-                    <h2 class="section-title">My Courses</h2>
-                    <p class="section-subtitle">Continue learning from where you left off</p>
-                </div>
-                <div id="myCoursesGrid" class="courses-grid empty-state">
-                    <div class="empty-message"><i class="bx bxs-inbox"></i>
-                        <p>No courses enrolled yet. Start exploring!</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="site-footer">
-        <div class="container footer-content">
-            <div class="footer-section">
-                <h4>About Learning Hub</h4>
-                <p>Empowering learners worldwide with high-quality technical education</p>
-            </div>
-            <div class="footer-section">
-                <h4>Follow Us</h4>
-                <!-- الروابط المعدلة هنا -->
-                <div class="social-links">
-                    <a href="https://www.facebook.com/share/1PLeb1EyhW/" target="_blank" title="Facebook"><i class="bx bxl-facebook"></i></a>
-                    <a href="https://github.com/bjmal4238-maker" target="_blank" title="GitHub"><i class="bx bxl-github"></i></a>
-                </div>
-            </div>
-        </div>
-        <div class="admin-bottom-control" style="text-align:right;margin:20px 0"><button id="adminLoginBtn" class="btn small outline">.</button></div>
-    </footer>
-
-    <!-- MODALS -->
-    <div class="modal-overlay" id="videoModal" aria-hidden="true">
-        <div class="modal-box modal-video" role="dialog" aria-modal="true">
-            <button class="modal-close" id="videoModalClose"><i class="bx bxs-x-circle"></i></button>
-            <h3 id="videoTitle">Video Title</h3>
-            <div class="video-container"><iframe id="videoFrame" width="100%" height="500" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
-            <p id="videoDescription"></p>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="previewModal" aria-hidden="true">
-        <div class="modal-box modal-video modal-small" role="dialog" aria-modal="true">
-            <button class="modal-close" id="previewModalClose"><i class="bx bxs-x-circle"></i></button>
-            <h3 id="previewTitle">Preview</h3>
-            <div class="video-container"><iframe id="previewFrame" width="100%" height="260" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
-            <p id="previewNote">This is a 15 second preview.</p>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="successModal">
-        <div class="modal-box">
-            <div class="modal-icon success"><i class="bx bxs-check-circle"></i></div>
-            <h3>Success!</h3>
-            <p id="successMessage">Operation completed successfully.</p>
-        </div>
-    </div>
-    <div class="modal-overlay" id="errorModal">
-        <div class="modal-box">
-            <div class="modal-icon error"><i class="bx bxs-x-circle"></i></div>
-            <h3>Error</h3>
-            <p id="errorMessage">An error occurred. Please try again.</p>
-        </div>
-    </div>
-
-    <!-- scripts -->
-    <script type="module" src="../scripts/firebase-config.js"></script>
-    <script src="../scripts/dashboard.js"></script>
-
-    <!-- admin login quick -->
-    <script>
-        document.getElementById('adminLoginBtn') ? .addEventListener('click', adminLogin);
-
-        function adminLogin() {
+// ===== Subscription Modal =====
+function showSubscriptionModal(item) {
+    Swal.fire({
+        title: '<i class="bx bxs-lock-alt" style="color:#f59e0b"></i> محتوى مدفوع',
+        html: `
+            <p style="color:#888;margin-bottom:16px;">هذا الفيديو للمشتركين فقط.<br>ادخل كود الاشتراك للوصول إلى المحتوى.</p>
+            <input id="subCodeInput" type="text" class="swal2-input" 
+                placeholder="ادخل كود الاشتراك هنا"
+                style="font-size:16px;text-align:center;letter-spacing:2px;">
+        `,
+        confirmButtonText: '<i class="bx bxs-key"></i> تفعيل الكود',
+        showCancelButton: true,
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#f59e0b',
+        focusConfirm: false,
+        preConfirm: async () => {
+            const code = document.getElementById('subCodeInput').value.trim();
+            if (!code) {
+                Swal.showValidationMessage('الرجاء إدخال الكود');
+                return false;
+            }
+            Swal.showValidationMessage('<i class="bx bx-loader-alt bx-spin"></i> جار التحقق...');
+            
+            try {
+                const { db, doc, getDoc, updateDoc, auth } = window.firebaseAuth;
+                const codeRef = doc(db, "subscriptionCodes", code);
+                const snap = await getDoc(codeRef);
+                
+                if (!snap.exists() || snap.data().active !== true || snap.data().usedBy) {
+                    Swal.showValidationMessage('❌ الكود غير صحيح أو مستخدم من قبل');
+                    return false;
+                }
+                
+                // تعليم الكود كمستخدم
+                const user = auth.currentUser;
+                await updateDoc(codeRef, {
+                    usedBy: user?.email || 'unknown',
+                    usedAt: new Date(),
+                    active: false
+                });
+                
+                // تحديث بيانات المستخدم
+                if (user) {
+                    const { setDoc } = window.firebaseAuth;
+                    await setDoc(doc(db, "users", user.uid), {
+                        subscribed: true,
+                        subscriptionCode: code,
+                        subscribedAt: new Date()
+                    }, { merge: true });
+                }
+                
+                return true;
+            } catch(e) {
+                Swal.showValidationMessage('حدث خطأ، حاول مرة أخرى.');
+                return false;
+            }
+        }
+    }).then(result => {
+        if (result.isConfirmed) {
             Swal.fire({
-                title: 'تسجيل دخول الأدمن',
-                html: '<input id="admin-user" class="swal2-input" placeholder="اسم المستخدم">' +
-                    '<input id="admin-pass" class="swal2-input" type="password" placeholder="كلمة السر">',
-                confirmButtonText: 'دخول',
-                showCancelButton: true,
-                cancelButtonText: 'إلغاء',
-                preConfirm: () => {
-                    const u = document.getElementById('admin-user').value.trim();
-                    const p = document.getElementById('admin-pass').value;
-                    if (!u || !p) return Swal.showValidationMessage("املأ جميع الحقول");
-                    if (u === "admin" && p === "admin111") {
-                        localStorage.setItem("username", "admin");
-                        localStorage.setItem("admin_pass", "admin111");
-                        return true;
-                    }
-                    return Swal.showValidationMessage("خطأ في اسم المستخدم أو كلمة السر");
-                }
-            }).then(r => {
-                if (r.isConfirmed) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'تم الدخول',
-                        timer: 700,
-                        showConfirmButton: false
-                    }).then(() => window.location.href = 'admin.html');
-                }
+                icon: 'success',
+                title: '🎉 تم التفعيل!',
+                text: 'يمكنك الآن مشاهدة جميع المحتوى المدفوع',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                playVideo(item);
+                // Reload to update all cards
+                setTimeout(() => location.reload(), 500);
             });
         }
-    </script>
-</body>
+    });
+}
 
-</html>
+// ===== Video Player =====
+function playVideo(item) {
+    const modal = document.getElementById('videoModal');
+    const iframe = document.getElementById('videoFrame');
+    const title = document.getElementById('videoTitle');
+    if (modal && iframe) {
+        title.textContent = item.title;
+        iframe.src = `https://www.youtube.com/embed/${item.videoId}?autoplay=1`;
+        modal.classList.add('show');
+    }
+}
+
+function previewVideo(item) {
+    const modal = document.getElementById('previewModal');
+    const iframe = document.getElementById('previewFrame');
+    const title = document.getElementById('previewTitle');
+    if (modal && iframe) {
+        title.textContent = "Preview: " + item.title;
+        iframe.src = `https://www.youtube.com/embed/${item.videoId}?autoplay=1&controls=0&start=0&end=15`;
+        modal.classList.add('show');
+    }
+}
+
+function setupModals() {
+    const closeVideo = () => {
+        document.getElementById('videoModal').classList.remove('show');
+        document.getElementById('videoFrame').src = '';
+    };
+    const closePreview = () => {
+        document.getElementById('previewModal').classList.remove('show');
+        document.getElementById('previewFrame').src = '';
+    };
+
+    document.getElementById('videoModalClose')?.addEventListener('click', closeVideo);
+    document.getElementById('previewModalClose')?.addEventListener('click', closePreview);
+
+    window.addEventListener('click', (e) => {
+        if (e.target.id === 'videoModal') closeVideo();
+        if (e.target.id === 'previewModal') closePreview();
+    });
+}
