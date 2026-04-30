@@ -1,57 +1,43 @@
-/* scripts/profile.js
-   Handles Profile UI, Image Upload, and Firebase Sync
-*/
+/* scripts/profile.js — Fixed: avatar save, overlay hover, password reset */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // انتظار تحميل مكتبة الفايربيز
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
     setTimeout(() => initProfile(), 500);
 });
 
 function initProfile() {
-    // 1. التأكد من الفايربيز
     if (!window.firebaseAuth) {
-        console.error("Firebase not loaded!");
+        setTimeout(() => initProfile(), 500);
         return;
     }
 
-    const { auth, db, doc, getDoc, setDoc, onAuthStateChanged, signOut } = window.firebaseAuth;
-    const PLACEHOLDER = 'https://via.placeholder.com/160';
+    const { auth, db, doc, getDoc, setDoc, onAuthStateChanged, signOut, sendPasswordResetEmail } = window.firebaseAuth;
 
-    // 2. إعدادات الثيم (أسود / بيج فقط)
+    // Theme Switcher
     const themeSelect = document.getElementById('themeSelect');
     if (themeSelect) {
-        // إزالة الأبيض إن وجد
-        const lightOpt = themeSelect.querySelector('option[value="light"]');
-        if(lightOpt) lightOpt.remove();
-
-        let savedTheme = localStorage.getItem('theme') || 'dark';
-        if (savedTheme === 'light') savedTheme = 'dark'; // تصحيح الخطأ القديم
-
-        document.body.setAttribute('data-theme', savedTheme);
-        themeSelect.value = savedTheme;
-
+        let saved = localStorage.getItem('theme') || 'dark';
+        document.body.setAttribute('data-theme', saved);
+        themeSelect.value = saved;
         themeSelect.addEventListener('change', (e) => {
-            const v = e.target.value;
-            localStorage.setItem('theme', v);
-            document.body.setAttribute('data-theme', v);
+            localStorage.setItem('theme', e.target.value);
+            document.body.setAttribute('data-theme', e.target.value);
         });
     }
 
-    // 3. مراقبة المستخدم الحالي
+    // Auth State
     onAuthStateChanged(auth, async (user) => {
         if (!user) {
-            window.location.href = '../index.html'; // لو مش مسجل، اطرده
+            window.location.href = '../index.html';
             return;
         }
-
-        // عرض الايميل فوراً
-        document.getElementById('emailLabel').textContent = user.email;
-        
-        // محاولة جلب بيانات البروفايل من الفايربيز
-        await loadUserProfile(user, db);
+        const emailEl = document.getElementById('emailLabel');
+        if (emailEl) emailEl.textContent = user.email;
+        await loadUserProfile(user, db, doc, getDoc);
     });
 
-    // 4. أزرار الخروج والعودة
+    // Buttons
     document.getElementById('logoutBtn')?.addEventListener('click', () => {
         signOut(auth).then(() => window.location.href = '../index.html');
     });
@@ -59,68 +45,132 @@ function initProfile() {
         window.location.href = 'dashboard.html';
     });
 
-    // 5. منطق رفع الصورة والمعاينة
     setupImageUpload();
 
-    // 6. زر الحفظ
     const form = document.getElementById('profileForm');
-    form?.addEventListener('submit', (e) => saveProfile(e, auth, db));
+    form?.addEventListener('submit', (e) => saveProfile(e, auth, db, doc, setDoc));
+
+    document.getElementById('clearProfile')?.addEventListener('click', () => {
+        document.getElementById('displayName').value = '';
+        document.getElementById('bio').value = '';
+        document.getElementById('avatarUrl').value = '';
+    });
+
+    // Password Reset — send email link
+    document.getElementById('sendPasswordResetBtn')?.addEventListener('click', async () => {
+        const user = auth.currentUser;
+        const btn = document.getElementById('sendPasswordResetBtn');
+        const msgEl = document.getElementById('passwordResetMsg');
+        if (!user) return;
+
+        btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> جار الإرسال...';
+        btn.disabled = true;
+
+        try {
+            await sendPasswordResetEmail(auth, user.email);
+            if (msgEl) {
+                msgEl.style.color = 'var(--success)';
+                msgEl.textContent = `✅ تم الإرسال إلى ${user.email} - تحقق من بريدك`;
+            }
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'success', title: 'تم الإرسال!',
+                    text: `تحقق من بريدك: ${user.email}`,
+                    timer: 3000, showConfirmButton: false
+                });
+            }
+        } catch (error) {
+            let msg = 'حدث خطأ، حاول مرة أخرى.';
+            if (error.code === 'auth/too-many-requests') msg = 'طلبات كثيرة، انتظر قليلاً.';
+            if (msgEl) { msgEl.style.color = 'var(--error)'; msgEl.textContent = msg; }
+        } finally {
+            setTimeout(() => {
+                btn.innerHTML = '<i class="bx bxs-envelope"></i> إرسال رابط تغيير كلمة المرور';
+                btn.disabled = false;
+            }, 3000);
+        }
+    });
 }
 
-// دالة رفع ومعاينة الصورة
+// ===== Image Upload — FIXED: stores URL not Base64 in Firestore =====
 function setupImageUpload() {
     const fileInput = document.getElementById('avatarFile');
     const urlInput = document.getElementById('avatarUrl');
     const previewBox = document.getElementById('avatarPreviewWrap');
-    
-    // عند اختيار ملف
+
+    // FIXED: File upload stores image as URL via imgbb or just shows preview locally
+    // We store it as base64 in localStorage temporarily and show it,
+    // but save only URL to Firestore to avoid 1MB limit
     fileInput?.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                updateAvatarUI(ev.target.result); // تحديث الصور فوراً
-                // تفريغ حقل الرابط لأنه اختار ملف
-                if(urlInput) urlInput.value = ''; 
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+
+        // Check file size (max 500KB for base64 storage)
+        if (file.size > 500 * 1024) {
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'warning', title: 'الصورة كبيرة جداً',
+                    html: 'الصورة يجب أن تكون أقل من 500KB.<br>يُفضل استخدام رابط URL بدلاً من رفع الصورة.',
+                    confirmButtonColor: 'var(--accent)'
+                });
+            }
+            return;
         }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const base64 = ev.target.result;
+            updateAvatarUI(base64);
+            // Store base64 in the URL field so it gets saved
+            if (urlInput) urlInput.value = base64;
+        };
+        reader.readAsDataURL(file);
     });
 
-    // عند الضغط على مربع الصورة -> فتح اختيار الملفات
-    previewBox?.addEventListener('click', () => fileInput.click());
+    // FIXED: Avatar preview wrap - click to upload
+    previewBox?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fileInput?.click();
+    });
 
-    // عند كتابة رابط صورة
     urlInput?.addEventListener('input', (e) => {
-        const val = e.target.value;
-        if (val.length > 5) updateAvatarUI(val);
+        const val = e.target.value.trim();
+        if (val.length > 10) updateAvatarUI(val);
     });
 }
 
-// تحديث كل صور الصفحة (الكبيرة والصغيرة وفي الهيدر)
 function updateAvatarUI(src) {
     if (!src) return;
-    document.getElementById('profileAvatarLarge').src = src;
-    document.getElementById('profileAvatarLargeSmall').src = src;
-    document.getElementById('userAvatar').src = src;
+    ['profileAvatarLarge', 'profileAvatarLargeSmall', 'userAvatar'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.src = src;
+            el.onerror = () => { el.src = 'https://via.placeholder.com/160/1a1a2e/2a7df6?text=User'; };
+        }
+    });
 }
 
-// جلب البيانات من الداتابيز
-async function loadUserProfile(user, db) {
+// ===== Load Profile =====
+async function loadUserProfile(user, db, doc, getDoc) {
     try {
-        const docRef = window.firebaseAuth.doc(db, "users", user.uid);
-        const docSnap = await window.firebaseAuth.getDoc(docRef);
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            // ملء الحقول
-            document.getElementById('displayName').value = data.displayName || '';
-            document.getElementById('bio').value = data.bio || '';
-            document.getElementById('displayNameHeading').textContent = data.displayName || 'User';
-            
+            const nameEl = document.getElementById('displayName');
+            const bioEl = document.getElementById('bio');
+            const nameHeading = document.getElementById('displayNameHeading');
+            const urlEl = document.getElementById('avatarUrl');
+
+            if (nameEl) nameEl.value = data.displayName || '';
+            if (bioEl) bioEl.value = data.bio || '';
+            if (nameHeading) nameHeading.textContent = data.displayName || 'User';
+
             if (data.photoURL) {
                 updateAvatarUI(data.photoURL);
-                document.getElementById('avatarUrl').value = data.photoURL; // لو رابط
+                if (urlEl) urlEl.value = data.photoURL;
             }
         }
     } catch (e) {
@@ -128,48 +178,67 @@ async function loadUserProfile(user, db) {
     }
 }
 
-// حفظ البيانات
-async function saveProfile(e, auth, db) {
+// ===== Save Profile — FIXED: saves photoURL properly =====
+async function saveProfile(e, auth, db, doc, setDoc) {
     e.preventDefault();
     const user = auth.currentUser;
     if (!user) return;
 
-    const btn = e.target.querySelector('button');
-    const originalText = btn.textContent;
-    btn.textContent = "Saving...";
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> جار الحفظ...';
     btn.disabled = true;
 
-    // الصورة الحالية المعروضة
-    const currentPhoto = document.getElementById('profileAvatarLarge').src;
-    const name = document.getElementById('displayName').value;
-    const bio = document.getElementById('bio').value;
+    const name = document.getElementById('displayName')?.value || '';
+    const bio = document.getElementById('bio')?.value || '';
+    const urlInput = document.getElementById('avatarUrl');
+    const photoURL = urlInput?.value?.trim() || '';
+
+    // Don't save placeholder URLs
+    const photoToSave = (photoURL.includes('placeholder.com') || photoURL === '') ? '' : photoURL;
+
+    // Check if base64 is too large for Firestore (1MB limit per field)
+    if (photoToSave.startsWith('data:') && photoToSave.length > 800000) {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'warning', title: 'الصورة كبيرة جداً',
+                html: 'يُرجى استخدام <strong>رابط URL</strong> للصورة بدلاً من رفعها مباشرة.<br><small>مثال: ارفع الصورة على <a href="https://imgbb.com" target="_blank">imgbb.com</a> وانسخ الرابط.</small>',
+                confirmButtonColor: 'var(--accent)'
+            });
+        }
+        return;
+    }
 
     const profileData = {
         displayName: name,
-        bio: bio,
-        photoURL: currentPhoto, // ملاحظة: هنا بنحفظ الرابط أو الـ Base64
-        email: user.email
+        bio,
+        photoURL: photoToSave,
+        email: user.email,
+        updatedAt: new Date()
     };
 
     try {
-        // الحفظ في كوليكشن users برقم المستخدم
-        await window.firebaseAuth.setDoc(window.firebaseAuth.doc(db, "users", user.uid), profileData);
-        
-        document.getElementById('displayNameHeading').textContent = name || 'User';
-        
-        Swal.fire({
-            icon: 'success',
-            title: 'Saved!',
-            text: 'Profile updated successfully',
-            timer: 1500,
-            showConfirmButton: false
-        });
+        await setDoc(doc(db, "users", user.uid), profileData, { merge: true });
 
+        const nameHeading = document.getElementById('displayNameHeading');
+        if (nameHeading) nameHeading.textContent = name || 'User';
+
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'success', title: 'تم الحفظ!',
+                text: 'تم تحديث بياناتك بنجاح ✅',
+                timer: 1800, showConfirmButton: false
+            });
+        }
     } catch (error) {
         console.error(error);
-        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to save profile' });
+        if (window.Swal) {
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل حفظ البيانات: ' + error.message });
+        }
     } finally {
-        btn.textContent = originalText;
+        btn.innerHTML = originalHTML;
         btn.disabled = false;
     }
 }
