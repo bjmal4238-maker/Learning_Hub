@@ -5,108 +5,146 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Learning Hub - Profile</title>
-
-    <!-- ربط ملفات الستايل -->
     <link rel="stylesheet" href="../styles/theme.css" />
     <link rel="stylesheet" href="../styles/profile.css" />
-    <!-- مكتبة الأيقونات -->
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body data-theme="dark">
-    <!-- الهيدر -->
+
+    <!-- Header -->
     <header class="site-header">
         <div class="container header-content">
             <a href="./dashboard.html" class="logo">
                 <i class="bx bxs-book"></i>
                 <span>Learning Hub</span>
             </a>
-
             <div class="header-actions">
                 <select id="themeSelect" class="theme-select" title="Theme">
-                    <option value="dark">Dark</option>
-                    <option value="light">Light</option>
-                    <option value="beige">Beige</option>
+                    <option value="dark">🌙 Dark</option>
+                    <option value="light">☀️ Light</option>
+                    <option value="beige">🌿 Beige</option>
                 </select>
-
                 <div class="user-profile">
-                    <!-- صورة المستخدم في الهيدر -->
                     <img id="userAvatar" class="avatar" src="https://via.placeholder.com/40" alt="User" />
                     <div class="profile-menu">
-                        <button class="btn small" id="profileBtn">Home</button>
-                        <button class="btn small outline" id="logoutBtn">Logout</button>
+                        <button class="btn small" id="profileBtn">
+                            <i class="bx bxs-home"></i> Home
+                        </button>
+                        <button class="btn small outline" id="logoutBtn">
+                            <i class="bx bx-log-out"></i> Logout
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- المحتوى الرئيسي -->
+    <!-- Main Content -->
     <main class="main-content profile-page">
         <section class="section">
             <div class="container">
                 <div class="section-header">
-                    <h2 class="section-title">Your Profile</h2>
+                    <h2 class="section-title">
+                        <i class="bx bxs-user-circle" style="color:var(--accent);margin-left:8px;"></i>
+                        Your Profile
+                    </h2>
                     <p class="section-subtitle">Manage your public profile information</p>
                 </div>
 
                 <div class="profile-grid">
-                    <!-- الكارت الجانبي (الصورة الكبيرة) -->
+
+                    <!-- Side Card -->
                     <div class="profile-card">
-                        <div class="avatar-large-wrap" style="width:160px;height:160px;border-radius:12px;overflow:hidden;border:1px solid var(--border)">
-                            <!-- هذه الصورة ستتغير تلقائياً عند الرفع -->
-                            <img id="profileAvatarLarge" src="https://via.placeholder.com/160" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />
+                        <div class="avatar-large-wrap">
+                            <img id="profileAvatarLarge" src="https://via.placeholder.com/160" alt="Avatar" />
                         </div>
                         <h3 id="displayNameHeading">Display Name</h3>
-                        <p class="muted" id="usernameLabel">@username</p>
+                        <span id="emailLabel" style="
+                            display:inline-block;
+                            background:var(--glass);border:1px solid var(--border);
+                            border-radius:20px;padding:4px 14px;font-size:12px;
+                            color:var(--text-muted);margin-top:8px;word-break:break-all;
+                        ">loading...</span>
                     </div>
 
-                    <!-- فورم التعديل -->
+                    <!-- Form Card -->
                     <div class="profile-form-card">
                         <form id="profileForm">
+
+                            <!-- Display Name -->
                             <div class="form-row">
-                                <label for="displayName">Display Name</label>
-                                <input id="displayName" name="displayName" type="text" placeholder="Your display name" />
+                                <label for="displayName">
+                                    <i class="bx bxs-user"></i> Display Name
+                                </label>
+                                <input id="displayName" name="displayName" type="text"
+                                    placeholder="Your display name" />
                             </div>
 
+                            <!-- Avatar Upload -->
                             <div class="form-row">
-                                <label>Avatar Preview</label>
-                                <div style="display:flex;gap:12px;align-items:center">
-                                    <!-- منطقة المعاينة (اضغط هنا لرفع الصورة) -->
-                                    <div id="avatarPreviewWrap" style="width:120px;height:120px;border-radius:12px;overflow:hidden;border:1px solid var(--border);cursor:pointer;position:relative;" title="اضغط لتغيير الصورة">
-                                        <img id="profileAvatarLargeSmall" src="https://via.placeholder.com/160" alt="Avatar" style="width:100%;height:100%;object-fit:cover" />
-                                        <div style="position:absolute;bottom:0;width:100%;background:rgba(0,0,0,0.5);color:#fff;font-size:10px;text-align:center;padding:2px;">Change</div>
+                                <label>
+                                    <i class="bx bx-image"></i> Profile Photo
+                                </label>
+                                <div class="avatar-upload-area">
+                                    <div id="avatarPreviewWrap" class="avatar-preview" title="Click to change photo">
+                                        <img id="profileAvatarLargeSmall" src="https://via.placeholder.com/90" alt="Avatar" />
+                                        <div class="overlay-label">Change</div>
                                     </div>
-                                    
-                                    <div style="flex:1">
-                                        <label for="avatarFile" style="display:block;margin-bottom:6px;cursor:pointer;color:var(--accent)">
-                                            <i class='bx bx-upload'></i> Upload new image
+                                    <div class="upload-controls">
+                                        <label class="upload-btn" for="avatarFile">
+                                            <i class='bx bx-upload'></i> Upload Image
                                         </label>
-                                        <!-- حقل الملف المخفي -->
-                                        <input id="avatarFile" type="file" accept="image/*" style="display:none" />
-                                        
-                                        <div style="margin-top:8px">
-                                            <label for="avatarUrl" style="font-size:12px">Or Avatar URL</label>
-                                            <input id="avatarUrl" name="avatarUrl" type="url" placeholder="https://..." />
+                                        <input id="avatarFile" type="file" accept="image/*" />
+                                        <div class="url-input-group">
+                                            <label for="avatarUrl">Or paste image URL</label>
+                                            <input id="avatarUrl" name="avatarUrl" type="url"
+                                                placeholder="https://..." />
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
+                            <!-- Bio -->
                             <div class="form-row">
-                                <label for="bio">Short Bio</label>
-                                <textarea id="bio" name="bio" rows="4" placeholder="Tell others about yourself"></textarea>
+                                <label for="bio">
+                                    <i class="bx bx-pencil"></i> Short Bio
+                                </label>
+                                <textarea id="bio" name="bio" rows="4"
+                                    placeholder="Tell others about yourself..."></textarea>
                             </div>
 
+                            <!-- Actions -->
                             <div class="form-actions">
-                                <button type="submit" class="btn">Save Profile</button>
-                                <button type="button" id="clearProfile" class="btn outline">Reset</button>
+                                <button type="button" id="clearProfile" class="btn outline">
+                                    <i class="bx bx-reset"></i> Reset
+                                </button>
+                                <button type="submit" class="btn">
+                                    <i class="bx bx-save"></i> Save Profile
+                                </button>
                             </div>
                         </form>
 
+                        <!-- Password Change Section -->
+                        <div class="password-section">
+                            <h3>
+                                <i class="bx bxs-lock-alt"></i> Change Password
+                            </h3>
+                            <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">
+                                سنرسل رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني المسجل.
+                            </p>
+                            <button id="sendPasswordResetBtn" class="btn outline" type="button">
+                                <i class="bx bxs-envelope"></i> إرسال رابط تغيير كلمة المرور
+                            </button>
+                            <div id="passwordResetMsg" style="margin-top:10px;font-size:13px;min-height:20px;"></div>
+                        </div>
+
                         <div class="help-note">
-                            <p>Profile is stored locally in your browser.</p>
+                            <p>
+                                <i class="bx bx-info-circle"></i>
+                                Profile data is synced with Firebase. Your photo is stored as a URL or Base64.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -114,39 +152,16 @@
         </section>
     </main>
 
-    <!-- الفوتر (تم تحديث البيانات هنا) -->
-    <footer class="site-footer">
-        <div class="container footer-content">
-            <div class="footer-section">
-                <h4>About Learning Hub</h4>
-                <p>Empowering learners worldwide with high-quality technical education</p>
-            </div>
-            
-            <!-- قسم التواصل المعدل -->
-            <div class="footer-section">
-                <h4>Contact</h4>
-                <p style="direction: ltr;">
-                    <i class="bx bxs-phone"></i> 01022572121<br>
-                    <i class="bx bxs-envelope"></i> bjmal4238@gmail.com
-                </p>
-            </div>
-            
-            <div class="footer-section">
-                <h4>Follow Us</h4>
-                <div class="social-links">
-                    <a href="#" title="Facebook"><i class="bx bxl-facebook"></i></a>
-                    <a href="#" title="Twitter"><i class="bx bxl-twitter"></i></a>
-                    <a href="#" title="LinkedIn"><i class="bx bxl-linkedin"></i></a>
-                    <a href="#" title="GitHub"><i class="bx bxl-github"></i></a>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 Learning Hub. All rights reserved.</p>
+    <!-- Footer -->
+    <footer class="site-footer" style="background:var(--card);border-top:1px solid var(--border);padding:30px 0;margin-top:40px;">
+        <div class="container" style="text-align:center;">
+            <p style="color:var(--text-muted);margin:0;font-size:14px;">
+                &copy; 2025 Learning Hub. All rights reserved.
+            </p>
         </div>
     </footer>
 
-    <!-- سكربت البروفايل -->
-    <script src="../scripts/profile.js"></script>
+    <script type="module" src="../scripts/firebase-config.js"></script>
+    <script defer src="../scripts/profile.js"></script>
 </body>
 </html>
